@@ -4,8 +4,8 @@ name: phase-03-upload-processing
 status: dirty
 issue_count: 1
 sources_mtime:
-  docs/phases/phase-03-upload-processing/context.md: "2026-07-07 06:35:53.332791000 -0300"
-  docs/decisions/technical-decisions-upload-processing.md: "2026-07-06 23:03:12.197660800 -0300"
+  docs/phases/phase-03-upload-processing/context.md: "2026-07-07 07:00:52.362380200 -0300"
+  docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 06:56:17.797051600 -0300"
 issues:
   - id: IC-1
     status: open
@@ -58,7 +58,7 @@ issues:
 
 ### Inconsistencies
 
-- **IC-1** — TD upload-processing/TD-09 has Scope: Frontend but phase/task has no active UI scope (UI Inventory absent or deferred). The TD would be orphaned in the final artifact (filtered out of backend subsections per Decisão #17; UI Contracts subsection not emitted). Explicit choice: (a) change TD Scope to 'Cross-layer' if the decision informs backend contracts as well; (b) add active UI scope (ensure /screen-inventory runs and user doesn't pick 'defer' option); (c) remove the TD if it's out of scope for this phase/task; (d) mark TD as Renders in: frontend-runtime + flip UI Inventory to logic-only via /plan-resolve (use when the TD is FE-runtime architectural-transversal and the phase has no UI surface). Note: the decisions doc's scope_description explicitly includes "frontend upload client" and lists `next-frontend/` as a secondary subproject, so option (b) — running `/screen-inventory upload-processing` then rerunning `/plan-context 03` — is the path consistent with the declared scope. **User chose option (b) in the 2026-07-07 /plan-resolve run** — resolution requires the external `/screen-inventory upload-processing` run, then `/plan-context 03` + `/plan-validate 03`; the issue stays open until that cycle completes.
+- **IC-1** — TD upload-processing/TD-09 has Scope: Frontend but phase/task has no active UI scope (UI Inventory absent or deferred). The TD would be orphaned in the final artifact (filtered out of backend subsections per Decisão #17; UI Contracts subsection not emitted). Explicit choice: (a) change TD Scope to 'Cross-layer'; (b) add active UI scope via /screen-inventory; (c) remove the TD; (d) mark TD as Renders in: frontend-runtime + flip UI Inventory to logic-only via /plan-resolve. **State (2026-07-07):** the /screen-inventory run for this phase was aborted per skip criteria — user confirmed Fase 03 is backend-only (no Figma screens; upload/playback/status UI deferred to later phases, especially Fase 05). Option (b) is therefore moot. **User has pre-selected option (d)** with rationale: TD-09 stays as FE-runtime groundwork (tus-js-client engine) for the future upload screen, and TD-02's BFF streaming proxy still lands in `next-frontend` this phase; no screen renders in this phase. Resolution: run /plan-resolve 03, confirm (d) — it executes the marker injection (`**Renders in:** frontend-runtime` on TD-09), flips `## UI Inventory` to the logic-only placeholder, and propagates both to context.md.
 
 ### Ambiguities
 
@@ -66,23 +66,23 @@ _None._
 
 ### Missing Decisions
 
-_None._ (All 9 capability bullets in `## Capability Coverage` map to ≥1 TD; the HTTP error response format for nestjs-project is inherited via phase-02-auth/TD-07; FE↔BE contract-sync strategy is covered by inherited next-frontend-openapi-typing TDs and the Decisão #29 check does not fire without active UI scope.)
+_None._ (All 9 capability bullets in `## Capability Coverage` map to ≥1 decided TD; the HTTP error response format for nestjs-project is inherited via phase-02-auth/TD-07; the Decisão #29 contract-sync check does not fire while `## UI Inventory` is absent — note it will also stay satisfied after the logic-only flip because inherited next-frontend-openapi-typing TDs (Scope: Cross-layer, OpenAPI codegen) cover contract sync.)
 
 ### Dependency Gaps
 
-_None._ (Auth and user/channel prerequisites are delivered by phases 01–02 per `## Inherited Conventions` and inherited TDs; object storage and job queue are deliverables of this phase itself, not missing prerequisites.)
+_None._ (Auth/session and BFF infrastructure required by TD-02's proxy route are delivered by phase 02; within-phase orderings — TD-02→TD-01, TD-04→TD-03, TD-07→TD-01+TD-08, TD-09→TD-02 — are documented in the decisions doc's dependency map.)
 
 ### Inherited Constraint Conflicts
 
-_None._ (No conflicts detected at validation time; TDs were decided after that run — re-check on next /plan-validate rerun.)
+_None._ (Checked against all decided TDs: TD-02 keeps upload bytes on the strict-BFF path per next-frontend-config-base/TD-03; TD-07's presigned-direct delivery is the carve-out that TD-03 explicitly pre-authorizes ("presigned URLs from object storage, NOT the backend URL"); TD-08 follows the inherited `registerAs` + Joi config conventions from phase 01; TD-03/pg-boss follows the Postgres-over-Redis precedent of phase-02-auth/TD-03.)
 
 ### Unresolved Open Questions
 
-_None._ (OQ-1 through OQ-10 resolved in the 2026-07-07 /plan-resolve run — all 10 TDs decided as Option A.)
+_None._ (All 10 TDs are decided; no pending TDs remain.)
 
 ### UI Coverage Gaps
 
-_None._ (`## UI Inventory` is absent — UIG-N does not apply. IC-1's resolution adds UI scope; rerun will re-evaluate this check.)
+_None._ (`## UI Inventory` is absent — UIG-N does not apply. After the pending (d) resolution flips it to the logic-only placeholder, UIG-N remains skipped by design.)
 
 ## Resolved Issues
 
