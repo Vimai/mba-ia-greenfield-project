@@ -59,11 +59,11 @@ issues:
 
 ### Inconsistencies
 
-_None._ (The Scope-Subsection orphan check does not fire: `## UI Inventory` carries the logic-only placeholder and upload-processing/TD-09 has an explicit `**Renders in:** frontend-runtime` marker — the TD renders in the `### Frontend Runtime` subsection of the final artifact, not orphaned.)
+_None._ (The Scope-Subsection orphan check does not fire: `## UI Inventory` carries the logic-only placeholder and upload-processing/TD-09 has an explicit `**Renders in:** frontend-runtime` marker — the TD renders in the `### Frontend Runtime` subsection of the final artifact, not orphaned. TD-02's BFF upload path and TD-07's presigned-direct delivery are not mutually exclusive: upload bytes traverse the BFF streaming proxy; media delivery bytes go direct via expiring signed URLs — the carve-out TD-07 itself scopes as "principled and narrow".)
 
 ### Ambiguities
 
-_None._
+_None._ (All 9 capability bullets are specific enough to decompose into SIs; boundaries with Fase 04 — video management/channel UI — and Fase 05 are unambiguous given the deferred-UI posture.)
 
 ### Missing Decisions
 
