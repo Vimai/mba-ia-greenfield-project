@@ -1,11 +1,11 @@
 ---
 kind: phase
 name: phase-03-upload-processing
-status: dirty
+status: clean
 issue_count: 0
 sources_mtime:
-  docs/phases/phase-03-upload-processing/context.md: "2026-07-07 07:00:52.362380200 -0300"
-  docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 06:56:17.797051600 -0300"
+  docs/phases/phase-03-upload-processing/context.md: "2026-07-07 09:55:45.765773100 -0300"
+  docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 09:38:39.772214200 -0300"
 issues:
   - id: IC-1
     status: resolved
@@ -59,7 +59,7 @@ issues:
 
 ### Inconsistencies
 
-_None._
+_None._ (The Scope-Subsection orphan check does not fire: `## UI Inventory` carries the logic-only placeholder and upload-processing/TD-09 has an explicit `**Renders in:** frontend-runtime` marker — the TD renders in the `### Frontend Runtime` subsection of the final artifact, not orphaned.)
 
 ### Ambiguities
 
@@ -67,7 +67,7 @@ _None._
 
 ### Missing Decisions
 
-_None._ (All 9 capability bullets in `## Capability Coverage` map to ≥1 decided TD; the HTTP error response format for nestjs-project is inherited via phase-02-auth/TD-07; the Decisão #29 contract-sync check does not fire while `## UI Inventory` is absent — note it will also stay satisfied after the logic-only flip because inherited next-frontend-openapi-typing TDs (Scope: Cross-layer, OpenAPI codegen) cover contract sync.)
+_None._ (All 9 capability bullets in `## Capability Coverage` map to ≥1 decided TD; the HTTP error response format for nestjs-project is inherited via phase-02-auth/TD-07. The Decisão #29 contract-sync check activates for `ui_in_scope: logic-only` but is satisfied by inherited TDs: next-frontend-openapi-typing TD-01–TD-05 (OpenAPI `paths` types + codegen sync script + CI freshness check + `contracts.ts` single surface) and openapi-docs-nestjs TD-01/TD-02 define the FE↔BE contract-sync strategy — one decision per project, inherited here.)
 
 ### Dependency Gaps
 
@@ -75,15 +75,15 @@ _None._ (Auth/session and BFF infrastructure required by TD-02's proxy route are
 
 ### Inherited Constraint Conflicts
 
-_None._ (Checked against all decided TDs: TD-02 keeps upload bytes on the strict-BFF path per next-frontend-config-base/TD-03; TD-07's presigned-direct delivery is the carve-out that TD-03 explicitly pre-authorizes ("presigned URLs from object storage, NOT the backend URL"); TD-08 follows the inherited `registerAs` + Joi config conventions from phase 01; TD-03/pg-boss follows the Postgres-over-Redis precedent of phase-02-auth/TD-03.)
+_None._ (TD-02 keeps upload bytes on the strict-BFF path per next-frontend-config-base/TD-03; TD-07's presigned-direct delivery is the carve-out TD-03 explicitly pre-authorizes; TD-08 follows the inherited `registerAs` + Joi config conventions; TD-03/pg-boss follows the Postgres-over-Redis precedent of phase-02-auth/TD-03.)
 
 ### Unresolved Open Questions
 
-_None._ (All 10 TDs are decided; no pending TDs remain.)
+_None._ (All 10 TDs decided; the logic-only UI Inventory placeholder carries no inventory open questions.)
 
 ### UI Coverage Gaps
 
-_None._ (`## UI Inventory` is absent — UIG-N does not apply. After the pending (d) resolution flips it to the logic-only placeholder, UIG-N remains skipped by design.)
+_None._ (`## UI Inventory` has the logic-only placeholder — UIG-N is skipped by design; Fase 03 has no UI verbs by construction. Upload/playback/download/status UI intentionally deferred to later phases, especially Fase 05.)
 
 ## Resolved Issues
 
@@ -96,5 +96,5 @@ _None._ (`## UI Inventory` is absent — UIG-N does not apply. After the pending
 - **OQ-6** _(resolved_by upload-processing/TD-06)_ — TD-06 decided: A (nanoid ~11 chars + unique constraint with insert-retry).
 - **OQ-7** _(resolved_by upload-processing/TD-07)_ — TD-07 decided: A (presigned GET direct from object storage).
 - **OQ-8** _(resolved_by upload-processing/TD-08)_ — TD-08 decided: A (dual endpoint — internal ops + public signing).
-- **OQ-9** _(resolved_by upload-processing/TD-09)_ — TD-09 decided: A (`tus-js-client` + design-system UI).
+- **OQ-9** _(resolved_by upload-processing/TD-09)_ — TD-09 decided: A (`tus-js-client` + design-system UI; `Renders in: frontend-runtime` per IC-1 resolution).
 - **OQ-10** _(resolved_by upload-processing/TD-10)_ — TD-10 decided: A (polling through the BFF).
