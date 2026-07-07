@@ -133,7 +133,7 @@ Entregar o pipeline completo de upload e processamento de vídeos: serviço de a
 ### SI-03.5 — Endpoint tus de upload resumável
 
 **Route:** POST|HEAD|PATCH|DELETE|OPTIONS /uploads/tus[/:uploadId]
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `nestjs-project/specs/uploads-tus.plan.md`
 
 **Description:** Endpoint tus 1.0 dentro do Nest (`@tus/server` + `@tus/s3-store`) com pré-cadastro do rascunho no handshake e enqueue transacional do processamento ao fim do upload.
 
@@ -214,7 +214,7 @@ Entregar o pipeline completo de upload e processamento de vídeos: serviço de a
 ### SI-03.8 — Endpoints de status, streaming e download
 
 **Route:** GET /videos/:publicId/status · GET /videos/:publicId/stream-url · GET /videos/:publicId/download-url
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `nestjs-project/specs/videos-delivery.plan.md`
 
 **Description:** Endpoints REST de consulta de status (polling) e de emissão de presigned URLs para reprodução via streaming e download direto do object storage.
 
