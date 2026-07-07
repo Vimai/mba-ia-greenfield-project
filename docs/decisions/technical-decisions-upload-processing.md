@@ -52,7 +52,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (MinIO + `@aws-sdk/client-s3`)** — matches the architecture diagram, keeps one S3 client shared with `@tus/s3-store` if TD-02 picks tus, and makes the storage service swappable by config. Option C is listed to be ruled out explicitly: it forecloses the diagram's "Frontend streams from Object Storage" edge and both TD-07 delivery options that depend on presigned URLs.
 
-**Decision:** _[pending]_
+**Decision:** A
+**Libraries:** @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
 
 ---
 
@@ -88,7 +89,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (tus in Nest behind a BFF streaming proxy)** — it is the only option that simultaneously honors the strict-BFF decision, the architecture diagram's "API uploads to storage" edge, and the resume-after-failure requirement with a battle-tested protocol instead of hand-rolled part bookkeeping. The double-hop byte path is the honest price; it is memory-flat (streamed, chunked) and acceptable at this project's scale — and if it ever becomes the bottleneck, the migration path is Option D for the byte plane while keeping the same draft/finalize domain endpoints. Depends on TD-01 Option A (shared `@aws-sdk/client-s3`). TD-09 (FE upload client) depends on this choice.
 
-**Decision:** _[pending]_
+**Decision:** A
+**Libraries:** @tus/server, @tus/s3-store
 
 ---
 
@@ -119,7 +121,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (pg-boss)** — the workload is low-throughput and correctness-critical, which is exactly pg-boss's sweet spot: transactional enqueue closes the job-loss race structurally, and no new broker enters the stack. This follows the project's established bias (Postgres over Redis in `phase-02-auth/TD-03`, custom guards over Passport). BullMQ is the right call if the team weighs official NestJS documentation and dashboard tooling above infra minimalism — flag it as the runner-up, not a wrong answer.
 
-**Decision:** _[pending]_
+**Decision:** A
+**Libraries:** pg-boss
 
 ---
 
@@ -150,7 +153,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (separate entry point, same codebase, own Compose service)** — delivers the diagram's container isolation and the performance guarantee at the cost of one bootstrap file, without the code duplication of Option C. Option B is disqualified by the phase requirement itself.
 
-**Decision:** _[pending]_
+**Decision:** A
 
 ---
 
@@ -181,7 +184,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (system ffmpeg in the image + direct spawn)** — with fluent-ffmpeg dead, a thin in-house wrapper over two well-defined CLI invocations is smaller than any wrapper dependency, and Docker-based provisioning matches the project's container-only execution rule. ffmpeg.wasm was considered and excluded as an option: WASM-side processing of 10GB files is orders of magnitude slower and memory-bound.
 
-**Decision:** _[pending]_
+**Decision:** A
 
 ---
 
@@ -212,7 +215,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (nanoid, 11 chars, unique column + retry)** — the standard tool for exactly this job: short, URL-safe, non-enumerable, with the DB constraint converting probabilistic uniqueness into the plan's "nunca conflite" guarantee. Generated at draft creation (TD-02 handshake) so the URL exists from the first moment of the video's life.
 
-**Decision:** _[pending]_
+**Decision:** A
+**Libraries:** nanoid
 
 ---
 
@@ -243,7 +247,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (presigned GET direct from storage)** — it is what the architecture diagram already commits to, and it is the only option consistent with the phase's performance stance for a 10GB-file platform. The BFF exception is principled and narrow: *media bytes* go direct with expiring signed URLs; *all application data* stays behind the BFF. Requires TD-08 to be decided with it.
 
-**Decision:** _[pending]_
+**Decision:** A
 
 ---
 
@@ -274,7 +278,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (dual endpoint: internal ops + public signing)** — two env keys and one extra `S3Client` solve the signature-host problem with zero new infrastructure, and the prod migration is a config value change. Follows the same config conventions already in place (`registerAs('storage', ...)` + Joi). Option C becomes attractive only when a real deployment fronts storage with a CDN — note it for Fase 07 (production environment).
 
-**Decision:** _[pending]_
+**Decision:** A
 
 ---
 
@@ -305,7 +309,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (`tus-js-client` + design-system UI)** — the project already owns a design system and a form pattern; it needs a transfer engine, not a UI framework. Uppy's weight buys features (multi-file, remote sources, editors) outside Phase 03's scope. Depends on TD-02 (tus variants).
 
-**Decision:** _[pending]_
+**Decision:** A
+**Libraries:** tus-js-client
 
 ---
 
@@ -336,7 +341,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (polling through the BFF)** — the status transition is minutes-scale and page-scoped; polling one REST endpoint that must exist anyway is the proportionate answer and keeps every established pattern (BFF, OpenAPI, MSW) untouched. If a later phase adds genuinely real-time features, revisit with SSE as the natural upgrade; nothing chosen here forecloses it.
 
-**Decision:** _[pending]_
+**Decision:** A
 
 ---
 
@@ -345,15 +350,15 @@ _Subprojects in scope:_
 | ID | Scope | Decision | Recommendation | Choice      |
 |----|-------|----------|---------------|-------------|
 | TD-01 | Backend | Object storage service & client SDK | **A** (MinIO + `@aws-sdk/client-s3`) | A           |
-| TD-02 | Cross-layer | Upload protocol & transport path (10GB, resumable) | **A** (tus in Nest + BFF streaming proxy) | _[pending]_ |
-| TD-03 | Backend | Background job queue | **A** (pg-boss on existing PostgreSQL) | _[pending]_ |
-| TD-04 | Backend | Video worker topology | **A** (separate entry point, same codebase, own Compose service) | _[pending]_ |
-| TD-05 | Backend | FFmpeg integration approach | **A** (system ffmpeg in image + direct spawn) | _[pending]_ |
-| TD-06 | Backend | Unique public video ID generation | **A** (nanoid ~11 chars + unique constraint) | _[pending]_ |
-| TD-07 | Cross-layer | Streaming & download delivery path | **A** (presigned GET direct from storage) | _[pending]_ |
-| TD-08 | Cross-layer | Storage endpoint topology for presigned URLs | **A** (dual endpoint: internal ops + public signing) | _[pending]_ |
-| TD-09 | Frontend | Frontend upload client | **A** (`tus-js-client` + design-system UI) | _[pending]_ |
-| TD-10 | Cross-layer | Processing status propagation | **A** (polling through the BFF) | _[pending]_ |
+| TD-02 | Cross-layer | Upload protocol & transport path (10GB, resumable) | **A** (tus in Nest + BFF streaming proxy) | A |
+| TD-03 | Backend | Background job queue | **A** (pg-boss on existing PostgreSQL) | A |
+| TD-04 | Backend | Video worker topology | **A** (separate entry point, same codebase, own Compose service) | A |
+| TD-05 | Backend | FFmpeg integration approach | **A** (system ffmpeg in image + direct spawn) | A |
+| TD-06 | Backend | Unique public video ID generation | **A** (nanoid ~11 chars + unique constraint) | A |
+| TD-07 | Cross-layer | Streaming & download delivery path | **A** (presigned GET direct from storage) | A |
+| TD-08 | Cross-layer | Storage endpoint topology for presigned URLs | **A** (dual endpoint: internal ops + public signing) | A |
+| TD-09 | Frontend | Frontend upload client | **A** (`tus-js-client` + design-system UI) | A |
+| TD-10 | Cross-layer | Processing status propagation | **A** (polling through the BFF) | A |
 
 ---
 

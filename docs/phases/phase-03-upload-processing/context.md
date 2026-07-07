@@ -3,7 +3,7 @@ kind: phase
 name: phase-03-upload-processing
 sources_mtime:
   docs/project-plan.md: "2026-07-06 21:47:59.998773400 -0300"
-  docs/decisions/technical-decisions-upload-processing.md: "2026-07-06 23:03:12.197660800 -0300"
+  docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 06:56:17.797051600 -0300"
   docs/decisions/technical-decisions-next-frontend-config-base.md: "2026-07-06 21:47:59.990464600 -0300"
   docs/decisions/technical-decisions-next-frontend-openapi-typing.md: "2026-07-06 21:47:59.991454800 -0300"
   docs/decisions/technical-decisions-openapi-docs-nestjs.md: "2026-07-06 21:47:59.991708800 -0300"
@@ -46,16 +46,16 @@ sources_mtime:
 
 | Ref | Source | Scope | Topic | Status | Decision | Libraries |
 |-----|--------|-------|-------|--------|----------|-----------|
-| upload-processing/TD-01 | phase | Backend | Object Storage Service & Client SDK | pending | — | — |
-| upload-processing/TD-02 | phase | Cross-layer | Upload Protocol & Transport Path (10GB, resumable) | pending | — | — |
-| upload-processing/TD-03 | phase | Backend | Background Job Queue | pending | — | — |
-| upload-processing/TD-04 | phase | Backend | Video Worker Topology | pending | — | — |
-| upload-processing/TD-05 | phase | Backend | FFmpeg Integration Approach | pending | — | — |
-| upload-processing/TD-06 | phase | Backend | Unique Public Video ID (URL) Generation | pending | — | — |
-| upload-processing/TD-07 | phase | Cross-layer | Streaming & Download Delivery Path | pending | — | — |
-| upload-processing/TD-08 | phase | Cross-layer | Storage Endpoint Topology (browser-reachable presigned URLs) | pending | — | — |
-| upload-processing/TD-09 | phase | Frontend | Frontend Upload Client | pending | — | — |
-| upload-processing/TD-10 | phase | Cross-layer | Processing Status Propagation to the Client | pending | — | — |
+| upload-processing/TD-01 | phase | Backend | Object Storage Service & Client SDK | decided | A | @aws-sdk/client-s3, @aws-sdk/s3-request-presigner |
+| upload-processing/TD-02 | phase | Cross-layer | Upload Protocol & Transport Path (10GB, resumable) | decided | A | @tus/server, @tus/s3-store |
+| upload-processing/TD-03 | phase | Backend | Background Job Queue | decided | A | pg-boss |
+| upload-processing/TD-04 | phase | Backend | Video Worker Topology | decided | A | — |
+| upload-processing/TD-05 | phase | Backend | FFmpeg Integration Approach | decided | A | — |
+| upload-processing/TD-06 | phase | Backend | Unique Public Video ID (URL) Generation | decided | A | nanoid |
+| upload-processing/TD-07 | phase | Cross-layer | Streaming & Download Delivery Path | decided | A | — |
+| upload-processing/TD-08 | phase | Cross-layer | Storage Endpoint Topology (browser-reachable presigned URLs) | decided | A | — |
+| upload-processing/TD-09 | phase | Frontend | Frontend Upload Client | decided | A | tus-js-client |
+| upload-processing/TD-10 | phase | Cross-layer | Processing Status Propagation to the Client | decided | A | — |
 
 _Source files:_
 
@@ -77,7 +77,55 @@ _Source files:_
 
 ## Decisions Detail
 
-_No decided TDs yet._
+### upload-processing/TD-01
+
+**Recommendation:** matches the architecture diagram, keeps one S3 client shared with `@tus/s3-store` if TD-02 picks tus, and makes the storage service swappable by config. Option C is listed to be ruled out explicitly: it forecloses the diagram's "Frontend streams from Object Storage" edge and both TD-07 delivery options that depend on presigned URLs.
+**Libraries:** @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
+
+### upload-processing/TD-02
+
+**Recommendation:** it is the only option that simultaneously honors the strict-BFF decision, the architecture diagram's "API uploads to storage" edge, and the resume-after-failure requirement with a battle-tested protocol instead of hand-rolled part bookkeeping. The double-hop byte path is the honest price; it is memory-flat (streamed, chunked) and acceptable at this project's scale — and if it ever becomes the bottleneck, the migration path is Option D for the byte plane while keeping the same draft/finalize domain endpoints. Depends on TD-01 Option A (shared `@aws-sdk/client-s3`). TD-09 (FE upload client) depends on this choice.
+**Libraries:** @tus/server, @tus/s3-store
+
+### upload-processing/TD-03
+
+**Recommendation:** the workload is low-throughput and correctness-critical, which is exactly pg-boss's sweet spot: transactional enqueue closes the job-loss race structurally, and no new broker enters the stack. This follows the project's established bias (Postgres over Redis in `phase-02-auth/TD-03`, custom guards over Passport). BullMQ is the right call if the team weighs official NestJS documentation and dashboard tooling above infra minimalism — flag it as the runner-up, not a wrong answer.
+**Libraries:** pg-boss
+
+### upload-processing/TD-04
+
+**Recommendation:** delivers the diagram's container isolation and the performance guarantee at the cost of one bootstrap file, without the code duplication of Option C. Option B is disqualified by the phase requirement itself.
+**Libraries:** —
+
+### upload-processing/TD-05
+
+**Recommendation:** with fluent-ffmpeg dead, a thin in-house wrapper over two well-defined CLI invocations is smaller than any wrapper dependency, and Docker-based provisioning matches the project's container-only execution rule. ffmpeg.wasm was considered and excluded as an option: WASM-side processing of 10GB files is orders of magnitude slower and memory-bound.
+**Libraries:** —
+
+### upload-processing/TD-06
+
+**Recommendation:** the standard tool for exactly this job: short, URL-safe, non-enumerable, with the DB constraint converting probabilistic uniqueness into the plan's "nunca conflite" guarantee. Generated at draft creation (TD-02 handshake) so the URL exists from the first moment of the video's life.
+**Libraries:** nanoid
+
+### upload-processing/TD-07
+
+**Recommendation:** it is what the architecture diagram already commits to, and it is the only option consistent with the phase's performance stance for a 10GB-file platform. The BFF exception is principled and narrow: *media bytes* go direct with expiring signed URLs; *all application data* stays behind the BFF. Requires TD-08 to be decided with it.
+**Libraries:** —
+
+### upload-processing/TD-08
+
+**Recommendation:** two env keys and one extra `S3Client` solve the signature-host problem with zero new infrastructure, and the prod migration is a config value change. Follows the same config conventions already in place (`registerAs('storage', ...)` + Joi). Option C becomes attractive only when a real deployment fronts storage with a CDN — note it for Fase 07 (production environment).
+**Libraries:** —
+
+### upload-processing/TD-09
+
+**Recommendation:** the project already owns a design system and a form pattern; it needs a transfer engine, not a UI framework. Uppy's weight buys features (multi-file, remote sources, editors) outside Phase 03's scope. Depends on TD-02 (tus variants).
+**Libraries:** tus-js-client
+
+### upload-processing/TD-10
+
+**Recommendation:** the status transition is minutes-scale and page-scoped; polling one REST endpoint that must exist anyway is the proportionate answer and keeps every established pattern (BFF, OpenAPI, MSW) untouched. If a later phase adds genuinely real-time features, revisit with SSE as the natural upgrade; nothing chosen here forecloses it.
+**Libraries:** —
 
 ## Inherited Decisions Detail
 
