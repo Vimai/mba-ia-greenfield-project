@@ -2,14 +2,15 @@
 kind: phase
 name: phase-03-upload-processing
 status: dirty
-issue_count: 1
+issue_count: 0
 sources_mtime:
   docs/phases/phase-03-upload-processing/context.md: "2026-07-07 07:00:52.362380200 -0300"
   docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 06:56:17.797051600 -0300"
 issues:
   - id: IC-1
-    status: open
+    status: resolved
     summary: "TD-09 has Scope: Frontend but phase has no active UI scope (no UI Inventory)"
+    resolved_by: marker_frontend_runtime
   - id: OQ-1
     status: resolved
     summary: "TD-01 pending — Object Storage Service & Client SDK"
@@ -58,7 +59,7 @@ issues:
 
 ### Inconsistencies
 
-- **IC-1** — TD upload-processing/TD-09 has Scope: Frontend but phase/task has no active UI scope (UI Inventory absent or deferred). The TD would be orphaned in the final artifact (filtered out of backend subsections per Decisão #17; UI Contracts subsection not emitted). Explicit choice: (a) change TD Scope to 'Cross-layer'; (b) add active UI scope via /screen-inventory; (c) remove the TD; (d) mark TD as Renders in: frontend-runtime + flip UI Inventory to logic-only via /plan-resolve. **State (2026-07-07):** the /screen-inventory run for this phase was aborted per skip criteria — user confirmed Fase 03 is backend-only (no Figma screens; upload/playback/status UI deferred to later phases, especially Fase 05). Option (b) is therefore moot. **User has pre-selected option (d)** with rationale: TD-09 stays as FE-runtime groundwork (tus-js-client engine) for the future upload screen, and TD-02's BFF streaming proxy still lands in `next-frontend` this phase; no screen renders in this phase. Resolution: run /plan-resolve 03, confirm (d) — it executes the marker injection (`**Renders in:** frontend-runtime` on TD-09), flips `## UI Inventory` to the logic-only placeholder, and propagates both to context.md.
+_None._
 
 ### Ambiguities
 
@@ -86,6 +87,7 @@ _None._ (`## UI Inventory` is absent — UIG-N does not apply. After the pending
 
 ## Resolved Issues
 
+- **IC-1** _(resolved_by marker_frontend_runtime)_ — TD upload-processing/TD-09 re-classified as `Renders in: frontend-runtime`; `## UI Inventory` body set to the logic-only placeholder in context.md (no screen inventory — Fase 03 is backend-only; upload/playback/download/status UI intentionally deferred to later phases, especially Fase 05). Decisions Detail + Decisions Index row patched in context.md. User confirmed option (d) on 2026-07-07: TD-09 stays as the FE-runtime foundation (tus-js-client) the future upload UI will consume; Phase 03 delivers only backend APIs, contracts, and infrastructure (plus TD-02's BFF streaming proxy in next-frontend).
 - **OQ-1** _(resolved_by upload-processing/TD-01)_ — TD-01 decided: A (MinIO + `@aws-sdk/client-s3` / `@aws-sdk/s3-request-presigner`).
 - **OQ-2** _(resolved_by upload-processing/TD-02)_ — TD-02 decided: A (tus in Nest — `@tus/server` + `@tus/s3-store` — behind a BFF streaming proxy).
 - **OQ-3** _(resolved_by upload-processing/TD-03)_ — TD-03 decided: A (pg-boss on existing PostgreSQL).

@@ -3,7 +3,7 @@ kind: phase
 name: phase-03-upload-processing
 sources_mtime:
   docs/project-plan.md: "2026-07-06 21:47:59.998773400 -0300"
-  docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 06:56:17.797051600 -0300"
+  docs/decisions/technical-decisions-upload-processing.md: "2026-07-07 09:38:39.772214200 -0300"
   docs/decisions/technical-decisions-next-frontend-config-base.md: "2026-07-06 21:47:59.990464600 -0300"
   docs/decisions/technical-decisions-next-frontend-openapi-typing.md: "2026-07-06 21:47:59.991454800 -0300"
   docs/decisions/technical-decisions-openapi-docs-nestjs.md: "2026-07-06 21:47:59.991708800 -0300"
@@ -44,18 +44,18 @@ sources_mtime:
 
 ## Decisions Index
 
-| Ref | Source | Scope | Topic | Status | Decision | Libraries |
-|-----|--------|-------|-------|--------|----------|-----------|
-| upload-processing/TD-01 | phase | Backend | Object Storage Service & Client SDK | decided | A | @aws-sdk/client-s3, @aws-sdk/s3-request-presigner |
-| upload-processing/TD-02 | phase | Cross-layer | Upload Protocol & Transport Path (10GB, resumable) | decided | A | @tus/server, @tus/s3-store |
-| upload-processing/TD-03 | phase | Backend | Background Job Queue | decided | A | pg-boss |
-| upload-processing/TD-04 | phase | Backend | Video Worker Topology | decided | A | — |
-| upload-processing/TD-05 | phase | Backend | FFmpeg Integration Approach | decided | A | — |
-| upload-processing/TD-06 | phase | Backend | Unique Public Video ID (URL) Generation | decided | A | nanoid |
-| upload-processing/TD-07 | phase | Cross-layer | Streaming & Download Delivery Path | decided | A | — |
-| upload-processing/TD-08 | phase | Cross-layer | Storage Endpoint Topology (browser-reachable presigned URLs) | decided | A | — |
-| upload-processing/TD-09 | phase | Frontend | Frontend Upload Client | decided | A | tus-js-client |
-| upload-processing/TD-10 | phase | Cross-layer | Processing Status Propagation to the Client | decided | A | — |
+| Ref | Source | Scope | Topic | Status | Decision | Libraries | Renders in |
+|-----|--------|-------|-------|--------|----------|-----------|------------|
+| upload-processing/TD-01 | phase | Backend | Object Storage Service & Client SDK | decided | A | @aws-sdk/client-s3, @aws-sdk/s3-request-presigner | — |
+| upload-processing/TD-02 | phase | Cross-layer | Upload Protocol & Transport Path (10GB, resumable) | decided | A | @tus/server, @tus/s3-store | — |
+| upload-processing/TD-03 | phase | Backend | Background Job Queue | decided | A | pg-boss | — |
+| upload-processing/TD-04 | phase | Backend | Video Worker Topology | decided | A | — | — |
+| upload-processing/TD-05 | phase | Backend | FFmpeg Integration Approach | decided | A | — | — |
+| upload-processing/TD-06 | phase | Backend | Unique Public Video ID (URL) Generation | decided | A | nanoid | — |
+| upload-processing/TD-07 | phase | Cross-layer | Streaming & Download Delivery Path | decided | A | — | — |
+| upload-processing/TD-08 | phase | Cross-layer | Storage Endpoint Topology (browser-reachable presigned URLs) | decided | A | — | — |
+| upload-processing/TD-09 | phase | Frontend | Frontend Upload Client | decided | A | tus-js-client | frontend-runtime |
+| upload-processing/TD-10 | phase | Cross-layer | Processing Status Propagation to the Client | decided | A | — | — |
 
 _Source files:_
 
@@ -120,6 +120,7 @@ _Source files:_
 ### upload-processing/TD-09
 
 **Recommendation:** the project already owns a design system and a form pattern; it needs a transfer engine, not a UI framework. Uppy's weight buys features (multi-file, remote sources, editors) outside Phase 03's scope. Depends on TD-02 (tus variants).
+**Renders in:** frontend-runtime
 **Libraries:** tus-js-client
 
 ### upload-processing/TD-10
@@ -348,6 +349,11 @@ _Source files:_
 | "Logout" | deferred | phase-02-auth-frontend | deferred_to_next_phase — logout button lives inside authenticated chrome (typically Phase 04). Phase 02 still implements POST `/api/auth/logout` (BFF route handler + `session.destroy()`) so the contract is ready when the chrome lands. |
 | "Recuperação de senha (destination screen / set-new-password)" | deferred | phase-02-auth-frontend | deferred_to_next_phase — `/forgot-password` ships this phase sending the e-mail; the reset-password destination screen is absent from Figma → link destination remains a 404 until a later phase delivers the screen via `/screen-inventory` extension run. Documented as a known gap. |
 | "Telas de cadastro, login, confirmação de conta e recuperação de senha" | deferred | phase-02-auth-frontend | a tela de confirmação da conta não será implementada nesta fase corrente, será adiada — the umbrella bullet's full coverage requires the confirmação and reset-password destination screens; both are deferred per Non-UI rows above. The 3 ship-this-phase telas (signup, login, forgot-password) are inventoried and covered by their own verbs; the umbrella bullet itself is deferred to the phase that lands the missing screens. |
+
+## UI Inventory
+
+_Frontend-runtime only — no screen inventory needed for this phase.
+Run /screen-inventory upload-processing if a UI surface is added in a future revision._
 
 ## Non-UI / Deferred Capabilities
 

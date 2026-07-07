@@ -310,6 +310,7 @@ _Subprojects in scope:_
 **Recommendation:** **Option A (`tus-js-client` + design-system UI)** — the project already owns a design system and a form pattern; it needs a transfer engine, not a UI framework. Uppy's weight buys features (multi-file, remote sources, editors) outside Phase 03's scope. Depends on TD-02 (tus variants).
 
 **Decision:** A
+**Renders in:** frontend-runtime
 **Libraries:** tus-js-client
 
 ---
