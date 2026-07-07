@@ -12,6 +12,7 @@ sources_mtime:
   docs/phases/phase-02-auth-frontend/context.md: "2026-07-06 21:47:59.995771300 -0300"
   .claude/skills/testing-guide-nestjs-project/SKILL.md: "2026-07-06 21:47:59.922884300 -0300"
   .claude/skills/testing-guide-next-frontend/SKILL.md: "2026-07-06 21:47:59.925884100 -0300"
+  docs/phases/phase-03-upload-processing/library-refs.md: "2026-07-07 17:08:42.179379100 -0300"
 ---
 
 # phase-03-upload-processing — Context
