@@ -13,6 +13,7 @@ import storageConfig from './config/storage.config';
 import { envValidationSchema } from './config/env.validation';
 import { StorageModule } from './storage/storage.module';
 import { VideosModule } from './videos/videos.module';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { VideosModule } from './videos/videos.module';
     AuthModule,
     StorageModule,
     VideosModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

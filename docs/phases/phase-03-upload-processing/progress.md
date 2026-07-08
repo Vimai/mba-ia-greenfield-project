@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 3/10 completed
+**SIs:** 4/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -28,9 +28,11 @@
   - Noted (not fixed, out of scope): a `pg` deprecation warning ("Calling client.query() when the client is already executing a query is deprecated") surfaces during the integration suites — pre-existing driver/TypeORM interaction, unrelated to this SI's code.
 
 ### SI-03.4 — QueueModule: pg-boss sobre o PostgreSQL existente
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 3 passing
+- **Observations:**
+  - Pinned `pg-boss@11` instead of the library-refs.md `latest`/v12. pg-boss v12 is pure ESM (`"type": "module"`, no CJS export condition) and would hit the same `require()`-of-ESM failure as nanoid v5 in this project's CommonJS Jest setup. v11 is CJS (`"type": "commonjs"`) with an identical API surface for everything this phase needs (`PgBoss` default export, `createQueue`, `send`, `fetch`, `Db`/`executeSql` adapter shape) — same fork logic as the nanoid decision in SI-03.3, just for a different library.
+  - First test run left Jest unable to exit cleanly (pg-boss's internal timers weren't torn down) because the integration spec never called `testingModule.close()` — fixed by capturing the `TestingModule` and closing it in `afterAll`, which triggers `QueueModule.onModuleDestroy` → `boss.stop()`. Re-run confirmed no more open-handle warning.
 
 ### SI-03.5 — Endpoint tus de upload resumável
 - **Status:** pending
