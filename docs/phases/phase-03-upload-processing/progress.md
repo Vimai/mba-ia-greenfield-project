@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 1/10 completed
+**SIs:** 2/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -12,9 +12,10 @@
   - Had to stop an unrelated container `postgres_rag` (different project) that was holding host port 5432, with user's confirmation, to bring up this project's `db` service.
 
 ### SI-03.2 — StorageModule com dual S3 clients
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 4 passing
+- **Observations:**
+  - Integration test overrides `STORAGE_ENDPOINT_PUBLIC` to the `minio` service name (instead of `.env`'s `localhost:9000`) before compiling the test module — the suite runs inside the `nestjs-api` container, where `localhost` is the container itself and cannot reach the `minio` service. Real dev/browser config in `.env`/`.env.example` is untouched; this is a test-only override to make the roundtrip network-reachable.
 
 ### SI-03.3 — VideosModule: entidade Video + public_id único
 - **Status:** pending
