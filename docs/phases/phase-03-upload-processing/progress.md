@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 4/10 completed
+**SIs:** 5/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -35,9 +35,16 @@
   - First test run left Jest unable to exit cleanly (pg-boss's internal timers weren't torn down) because the integration spec never called `testingModule.close()` — fixed by capturing the `TestingModule` and closing it in `afterAll`, which triggers `QueueModule.onModuleDestroy` → `boss.stop()`. Re-run confirmed no more open-handle warning.
 
 ### SI-03.5 — Endpoint tus de upload resumável
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 5 passing (spec-derived E2E: `test/uploads-tus.e2e-spec.ts`); regression check on SI-03.2/03.3 shared-file touches — 19 passing
+- **Observations:**
+  - Pinned `@tus/server@1` and `@tus/s3-store@1` instead of the TD-02-recommended "v2.4.x". v2.x for both packages is pure ESM with no CJS export condition at all (worse than nanoid/pg-boss's dual-package situation) — incompatible with this project's CommonJS Jest harness for the same structural reason as the nanoid/pg-boss decisions in SI-03.3/03.4. v1.x is CJS, not deprecated, and its `Server`/`S3Store` API surface (options, hooks, `generateUrl`/`getFileIdFromRequest`) is what library-refs.md documented. Flagging because TD-02 named the version explicitly (unlike the incidental "latest" pins for nanoid/pg-boss), so this is a slightly bigger deviation from the plan's stated rationale, even though the outcome is forced by the same hard constraint.
+  - Resolved an implicit tension between SI-03.3's `VideosService.createDraft({ channelId, title, storageKey })` (storage_key is a caller-supplied input; public_id is generated internally by createDraft) and SI-03.5's own wording ("namingFunction gera a storage key `videos/{public_id}`"): since tus's `namingFunction` runs before any hook that could call `createDraft`, the storage key's random segment and the video's actual `public_id` column cannot literally be the same value without changing SI-03.3's already-tested contract. Decoupled them: `namingFunction` generates `videos/{randomUUID()}` (an internal S3 key, never user-facing), while `public_id` remains createDraft's own nanoid output (the public, user-facing identifier). Did not reopen SI-03.3.
+  - Storage keys contain a slash (`videos/{uuid}`), which would otherwise split the tus `Location` URL into two path segments. Implemented the `generateUrl`/`getFileIdFromRequest` base64url encode/decode pairing that library-refs.md's own note anticipated for this case.
+  - tus hooks (`onIncomingRequest`, `onUploadCreate`, `onUploadFinish`) run on a raw Express middleware mounted via `app.use()`, bypassing Nest's guard/interceptor pipeline entirely — so JWT auth is re-implemented directly in `UploadsService` (extract Bearer token, `JwtService.verifyAsync`, look up the channel) rather than reusing `JwtAuthGuard`, which only works via Nest's `ExecutionContext`. Added `ChannelsService.findByUserId` to support this.
+  - Implemented the Authorization Matrix's owner-check for HEAD/PATCH/DELETE (not explicitly covered by this SI's Test Specs scenarios, which only exercise POST/PATCH/HEAD on a single user's own upload) — authenticated-but-non-owner requests are rejected with the tus protocol's own `{status_code, body}` error shape (403), not the Nest domain-exception envelope, consistent with the phase's own note that tus errors don't pass through the Nest exception filter.
+  - `main.ts` now boots with `{ bodyParser: false }` and manually re-applies `json()`/`urlencoded()` for every route except `/uploads/tus`, so the tus endpoint sees the raw request stream. The E2E spec replicates this same bootstrap wiring manually (mirroring the existing project convention of replicating global pipes/filters per e2e spec, documented in `.claude/rules/nestjs-testing.md`).
+  - Fixed pre-existing TypeScript errors surfaced by `npx tsc --noEmit` (not previously run since SI-03.2, since ts-jest doesn't block tests on type errors): `storage.config.ts`'s required env fields lacked non-null assertions (fixed to match the existing `auth.config.ts` convention), and `storage.service.ts` imported `StreamingBlobPayloadInputTypes` from the wrong package (moved to `@smithy/types` in the installed SDK version). Also added `express` and `@smithy/types` as explicit dependencies (previously only transitive via `@nestjs/platform-express` / `@aws-sdk/client-s3`) since `main.ts` and `storage.service.ts` now import from them directly.
 
 ### SI-03.6 — Worker: entry point dedicado + serviço Compose com ffmpeg
 - **Status:** pending

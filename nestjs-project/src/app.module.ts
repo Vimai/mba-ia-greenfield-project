@@ -14,6 +14,7 @@ import { envValidationSchema } from './config/env.validation';
 import { StorageModule } from './storage/storage.module';
 import { VideosModule } from './videos/videos.module';
 import { QueueModule } from './queue/queue.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { QueueModule } from './queue/queue.module';
     StorageModule,
     VideosModule,
     QueueModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

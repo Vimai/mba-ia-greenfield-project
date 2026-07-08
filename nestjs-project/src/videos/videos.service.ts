@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { customAlphabet, urlAlphabet } from 'nanoid';
-import { QueryFailedError, Repository } from 'typeorm';
+import { EntityManager, QueryFailedError, Repository } from 'typeorm';
 import {
   Video,
   VideoProcessingStatus,
@@ -63,5 +63,22 @@ export class VideosService {
     throw new Error(
       `Failed to generate a unique public_id after ${MAX_PUBLIC_ID_ATTEMPTS} attempts`,
     );
+  }
+
+  async findByStorageKey(storageKey: string): Promise<Video | null> {
+    return this.videoRepository.findOne({
+      where: { storage_key: storageKey },
+    });
+  }
+
+  async markProcessing(
+    videoId: string,
+    sizeBytes: number,
+    manager: EntityManager,
+  ): Promise<void> {
+    await manager.update(Video, videoId, {
+      processing_status: VideoProcessingStatus.PROCESSING,
+      size_bytes: String(sizeBytes),
+    });
   }
 }

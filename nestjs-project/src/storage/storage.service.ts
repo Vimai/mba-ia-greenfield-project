@@ -6,9 +6,9 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   DeleteObjectCommand,
-  type StreamingBlobPayloadInputTypes,
   type HeadObjectCommandOutput,
 } from '@aws-sdk/client-s3';
+import type { StreamingBlobPayloadInputTypes } from '@smithy/types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'stream';
 import storageConfig from '../config/storage.config';
