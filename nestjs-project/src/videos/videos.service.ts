@@ -71,6 +71,12 @@ export class VideosService {
     });
   }
 
+  async findByPublicId(publicId: string): Promise<Video | null> {
+    return this.videoRepository.findOne({
+      where: { public_id: publicId },
+    });
+  }
+
   async markProcessing(
     videoId: string,
     sizeBytes: number,

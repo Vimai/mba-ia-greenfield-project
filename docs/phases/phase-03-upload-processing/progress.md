@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 7/10 completed
+**SIs:** 8/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -66,9 +66,13 @@
   - Rebuilt and recreated the `nestjs-api` container (previously only `video-worker` was rebuilt in SI-03.6, and Compose builds a separate image per service even from an identical Dockerfile) — the integration suite runs inside `nestjs-api` via Jest, and initially failed with `spawn ffmpeg ENOENT` because that container's image predated the Dockerfile.dev ffmpeg addition.
 
 ### SI-03.8 — Endpoints de status, streaming e download
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 7 passing (spec-derived E2E: `test/videos-delivery.e2e-spec.ts`); regression check — 10 passing (VideosService/entity) + 51 passing (swagger + auth e2e)
+- **Observations:**
+  - Domain exceptions (`VideoNotFoundException`, `VideoNotOwnedException`, `VideoNotReadyException`) needed no new exception-filter code — `DomainExceptionFilter` is already generic (`@Catch(DomainException)`, maps from the instance's own `errorCode`/`httpStatus`), so action 4 ("registrar as exceções... no filter") was satisfied purely by adding the exception classes.
+  - `download-url`'s `Content-Disposition` filename uses `video.title` as-is (not a separately-derived `{title}.{ext}` split) — `title` is already the original upload filename with extension (per SI-03.5's `createDraft` call, `title: upload.metadata.filename`), so the contract's `filename="{title}.{ext}"` phrasing describes what `title` already contains, not an additional concatenation.
+  - The E2E spec needed the same `STORAGE_ENDPOINT_PUBLIC` → `minio` service-name override used in SI-03.2's integration test, for the same reason: presigned URLs signed against `localhost:9000` aren't fetchable from inside the `nestjs-api` container where the suite runs.
+  - Regenerated `openapi.json` (additive diff, 243 lines, 3 new paths) via `npm run openapi:export`. The AC's "CI freshness check passes" has no corresponding CI in this repo (no `.github/workflows`, no freshness test file found) — nothing to verify against; flagging as inapplicable to this repo's current state rather than fabricating a CI job out of scope for this SI.
 
 ### SI-03.9 — BFF streaming proxy do tus (next-frontend)
 - **Status:** pending
