@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 5/10 completed
+**SIs:** 6/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -47,9 +47,13 @@
   - Fixed pre-existing TypeScript errors surfaced by `npx tsc --noEmit` (not previously run since SI-03.2, since ts-jest doesn't block tests on type errors): `storage.config.ts`'s required env fields lacked non-null assertions (fixed to match the existing `auth.config.ts` convention), and `storage.service.ts` imported `StreamingBlobPayloadInputTypes` from the wrong package (moved to `@smithy/types` in the installed SDK version). Also added `express` and `@smithy/types` as explicit dependencies (previously only transitive via `@nestjs/platform-express` / `@aws-sdk/client-s3`) since `main.ts` and `storage.service.ts` now import from them directly.
 
 ### SI-03.6 — Worker: entry point dedicado + serviço Compose com ffmpeg
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** no tests (infra); ACs verified manually (worker boots with no HTTP port, logs "waiting for jobs", ffmpeg/ffprobe exit 0, nestjs-api unaffected); regression check on SI-03.5 E2E suite — 5 passing
+- **Observations:**
+  - `nest start worker --watch` (positional arg) silently falls back to the default `main` entry in standard (non-monorepo) CLI mode — the worker booted the full HTTP `AppModule` instead of `WorkerModule` on the first attempt. Fixed the npm script to use `nest start --entryFile worker --watch`, which is the documented way to select a custom entry file outside monorepo mode.
+  - `WorkerModule`'s `autoLoadEntities: true` only registers entities reachable via modules actually imported into it — importing just `StorageModule`/`VideosModule`/`QueueModule` left `Video`'s `@ManyToOne(() => Channel)` (and transitively `Channel`'s `@OneToOne(() => User)`) unresolvable, crashing TypeORM's metadata build (`Entity metadata for Video#channel was not found`, then `Channel#user`). Fixed by also importing `ChannelsModule` and `UsersModule` into `WorkerModule`, even though the worker doesn't call their services directly — needed purely for relation metadata.
+  - `video-worker`'s Compose service deliberately runs the worker process directly on `docker compose up` (`command: npm run worker:dev`), diverging from the idle-by-default convention used for `nestjs-api`/`next-frontend` (CMD `tail -f /dev/null`, app started only on explicit request) — this SI's own AC required `docker compose up -d video-worker` to immediately show "waiting for jobs" in the logs.
+  - Both packages' Dockerfile.dev is shared with `nestjs-api`, but Compose builds a separate image per service (`nestjs-project-video-worker` vs `nestjs-project-nestjs-api`) even from the identical Dockerfile — only `video-worker`'s image was rebuilt with ffmpeg; `nestjs-api`'s existing image is untouched (harmless, since it doesn't need ffmpeg, but it will pick up ffmpeg too on its next rebuild).
 
 ### SI-03.7 — Job de processamento: metadados + thumbnail + transições de status
 - **Status:** pending
