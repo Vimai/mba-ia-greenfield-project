@@ -81,4 +81,34 @@ export class VideosService {
       size_bytes: String(sizeBytes),
     });
   }
+
+  async findById(id: string): Promise<Video | null> {
+    return this.videoRepository.findOne({ where: { id } });
+  }
+
+  async markReady(
+    videoId: string,
+    data: {
+      durationSeconds: number;
+      width: number;
+      height: number;
+      thumbnailKey: string;
+    },
+  ): Promise<void> {
+    await this.videoRepository.update(videoId, {
+      processing_status: VideoProcessingStatus.READY,
+      duration_seconds: String(data.durationSeconds),
+      width: data.width,
+      height: data.height,
+      thumbnail_key: data.thumbnailKey,
+      processing_error: null,
+    });
+  }
+
+  async markFailed(videoId: string, error: string): Promise<void> {
+    await this.videoRepository.update(videoId, {
+      processing_status: VideoProcessingStatus.FAILED,
+      processing_error: error,
+    });
+  }
 }

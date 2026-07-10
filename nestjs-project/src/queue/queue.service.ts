@@ -30,4 +30,16 @@ export class QueueService {
       { retryLimit: VIDEO_PROCESSING_RETRY_LIMIT, db },
     );
   }
+
+  async workVideoProcessing(
+    handler: (
+      job: PgBoss.JobWithMetadata<{ videoId: string }>,
+    ) => Promise<void>,
+  ): Promise<string | null> {
+    return this.boss.work<{ videoId: string }>(
+      QUEUE_NAMES.VIDEO_PROCESSING,
+      { includeMetadata: true },
+      async ([job]) => handler(job),
+    );
+  }
 }

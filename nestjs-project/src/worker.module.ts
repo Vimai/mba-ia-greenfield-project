@@ -6,6 +6,7 @@ import databaseConfig from './config/database.config';
 import storageConfig from './config/storage.config';
 import { envValidationSchema } from './config/env.validation';
 import { ChannelsModule } from './channels/channels.module';
+import { ProcessingModule } from './processing/processing.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 import { VideosModule } from './videos/videos.module';
@@ -38,6 +39,7 @@ import { QueueModule } from './queue/queue.module';
     UsersModule,
     VideosModule,
     QueueModule,
+    ProcessingModule,
   ],
 })
 export class WorkerModule {}

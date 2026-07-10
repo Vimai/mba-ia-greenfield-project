@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 6/10 completed
+**SIs:** 7/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -56,9 +56,14 @@
   - Both packages' Dockerfile.dev is shared with `nestjs-api`, but Compose builds a separate image per service (`nestjs-project-video-worker` vs `nestjs-project-nestjs-api`) even from the identical Dockerfile — only `video-worker`'s image was rebuilt with ffmpeg; `nestjs-api`'s existing image is untouched (harmless, since it doesn't need ffmpeg, but it will pick up ffmpeg too on its next rebuild).
 
 ### SI-03.7 — Job de processamento: metadados + thumbnail + transições de status
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 8 passing (6 unit + 2 integration; integration generates a synthetic test video on the fly via `ffmpeg -f lavfi -i testsrc=...` instead of a checked-in binary fixture)
+- **Observations:**
+  - Used an explicit `Promise`-wrapped `execFile` in `FfmpegService` instead of `util.promisify(execFile)`. Node's real `execFile` has a registered `util.promisify.custom` implementation that resolves to `{stdout, stderr}`; a plain `jest.mock('child_process')` replacement doesn't carry that symbol, so `promisify()` would fall back to its default single-value resolution (just `stdout`, not `{stdout, stderr}`), silently breaking the destructure in tests. The explicit wrapper sidesteps that mismatch entirely and mirrors the codebase's other error-classification helpers in shape.
+  - Retry-exhaustion handling (mark `processing_status: failed` + `processing_error`) lives in `worker.ts`'s job-handler wrapper, not inside `ProcessingService` itself — `boss.work(..., { includeMetadata: true }, ...)` gives access to `job.retryCount`/`job.retryLimit`, so the wrapper only calls `videosService.markFailed` on the last allowed attempt and rethrows otherwise (letting pg-boss retry). `ProcessingService.processVideo` itself just throws on any failure; it has no retry-awareness.
+  - Idempotency (AC #3) required no special-case code: `thumbnail_key` is deterministic (`thumbnails/{public_id}.jpg`), so reprocessing an already-`ready` video overwrites the same S3 key and DB row — no orphan duplicate is possible by construction. Verified this explicitly in a test (`processVideo` called twice, same thumbnail_key, single object at that key).
+  - The integration test reuses `WorkerModule` directly (rather than assembling a bespoke test module) — this incidentally re-exercises the `ChannelsModule`/`UsersModule` relation-metadata fix from SI-03.6, since `Video`'s entity relations need those modules present in whatever module tree it's tested under.
+  - Rebuilt and recreated the `nestjs-api` container (previously only `video-worker` was rebuilt in SI-03.6, and Compose builds a separate image per service even from an identical Dockerfile) — the integration suite runs inside `nestjs-api` via Jest, and initially failed with `spawn ffmpeg ENOENT` because that container's image predated the Dockerfile.dev ffmpeg addition.
 
 ### SI-03.8 — Endpoints de status, streaming e download
 - **Status:** pending
