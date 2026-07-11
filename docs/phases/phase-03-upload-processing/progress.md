@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 9/10 completed
+**SIs:** 10/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -84,6 +84,9 @@
   - `withRefresh`'s reactive-retry-on-401 pattern re-invokes the whole fetcher on failure, which would try to re-read an already-consumed request body stream for PATCH (the only body-carrying tus method). Used it uniformly across all methods anyway (simplicity, matches "refresh single-flight quando expirado" wording, and none of this SI's ACs/tests exercise the mid-stream-401 case) — accepting a known but out-of-scope edge case: a token expiring exactly mid-PATCH could surface as a 500 instead of a clean retry, though the session cookie still gets refreshed as a side effect, so the tus client's own resumability self-heals on its next attempt.
 
 ### SI-03.10 — Frontend Upload Client (Setup)
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** no tests (Setup SI, smoke-gated by ACs); ACs verified manually (tus-js-client@4.3.1 pinned, Setup snippet byte-verbatim, tsc clean, build clean); regression check — 70 passing
+- **Observations:**
+  - Found `next-frontend` had **no `.env.local` at all** (and no `.env.example` either) — `npm run build` failed at the "Collecting page data" phase with `Invalid environment variables` (API_URL/SESSION_PASSWORD) before I even touched anything, since `lib/env.ts` requires both. Created `.env.local` with placeholder values (`API_URL=http://nestjs-api:3000`, a 32+ char `SESSION_PASSWORD`) to unblock the build — gitignored (`.env*`), not committed. Out-of-scope root cause (project-wide missing env setup, not introduced by this SI) but necessary to verify this SI's own AC #3.
+  - `tus-js-client@4.3.1` has both a CJS entry (`main`) and an ESM entry (`module`) declared in its own package.json (no `"type": "module"` forcing pure-ESM) — unlike the nanoid/pg-boss/@tus-server ESM-only situations from earlier SIs, no version downgrade was needed here.
+  - Kept the Setup snippet's F2-load-bearing lines (endpoint, retryDelays, metadata, findPreviousUploads/resumeFromPreviousUpload/start flow) byte-identical to the Tech Spec, per AC #2. The wrapper's function signature, callback props, and leading comment are the derivable extension the SI's own action text explicitly allows.
