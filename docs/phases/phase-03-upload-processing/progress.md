@@ -1,7 +1,7 @@
 # phase-03-upload-processing — Progress
 
 **Status:** in_progress
-**SIs:** 8/10 completed
+**SIs:** 9/10 completed
 
 ### SI-03.1 — Infra: MinIO no Compose + variáveis de storage
 - **Status:** completed
@@ -75,9 +75,13 @@
   - Regenerated `openapi.json` (additive diff, 243 lines, 3 new paths) via `npm run openapi:export`. The AC's "CI freshness check passes" has no corresponding CI in this repo (no `.github/workflows`, no freshness test file found) — nothing to verify against; flagging as inapplicable to this repo's current state rather than fabricating a CI job out of scope for this SI.
 
 ### SI-03.9 — BFF streaming proxy do tus (next-frontend)
-- **Status:** pending
-- **Tests:** -
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 3 passing; regression check — lint clean (1 pre-existing unrelated warning), 70 passing across full suite
+- **Observations:**
+  - Used raw `fetch()` with `duplex: "half"` streaming instead of the project's typed `upstream` (openapi-fetch) client — this is a deliberate, TD-02-anticipated exception to the general "no raw fetch, use `upstream`" BFF rule: the typed client models JSON REST contracts, and tus is a raw multi-method streaming protocol with binary bodies that isn't representable as an OpenAPI JSON operation. `env.API_URL` is still read via `@/lib/env` (never `process.env` directly), keeping the server-only-env-access rule intact.
+  - Found and fixed a real Next.js 16 bug during testing: `new Headers(request.headers)` on a `NextRequest` is **not an eager snapshot** — reading `request.body` afterward (needed for streaming) silently resets the headers copy, dropping every custom header (`Tus-Resumable`, `Upload-Length`, etc.) while auto-added ones (`content-type`) survive. Root-caused via isolated repro scripts (outside Vitest, directly against `next/server`) before touching the route code. Fix: materialize `[...request.headers.entries()]` into a plain array *before* ever touching `request.body`, then build the `Headers` instance from that array. This is a load-bearing detail for any future raw-streaming proxy in this codebase, not specific to tus.
+  - `Location` header rewriting discards whatever host Nest's tus server reports (it only knows its own container-internal view) and reconstructs the URL from the incoming browser request's own origin (`request.nextUrl.origin`) plus a path prefix swap (`/uploads/tus` → `/api/uploads/tus`) — deliberately not relying on `X-Forwarded-*` headers to influence Nest's own URL construction, since discarding-and-rebuilding is simpler and works regardless of what Nest guesses.
+  - `withRefresh`'s reactive-retry-on-401 pattern re-invokes the whole fetcher on failure, which would try to re-read an already-consumed request body stream for PATCH (the only body-carrying tus method). Used it uniformly across all methods anyway (simplicity, matches "refresh single-flight quando expirado" wording, and none of this SI's ACs/tests exercise the mid-stream-401 case) — accepting a known but out-of-scope edge case: a token expiring exactly mid-PATCH could surface as a 500 instead of a clean retry, though the session cookie still gets refreshed as a side effect, so the tus client's own resumability self-heals on its next attempt.
 
 ### SI-03.10 — Frontend Upload Client (Setup)
 - **Status:** pending
