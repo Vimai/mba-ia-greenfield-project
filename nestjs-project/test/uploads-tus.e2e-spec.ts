@@ -8,6 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/auth/auth.service';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
+import { MailService } from '../src/mail/mail.service';
 import { ValidationExceptionFilter } from '../src/common/filters/validation-exception.filter';
 import { cleanAllTables } from '../src/test/create-test-data-source';
 import { Video } from '../src/videos/entities/video.entity';
@@ -67,11 +68,14 @@ describe('Uploads tus (e2e)', () => {
 
     let capturedToken = '';
     const authService = app.get(AuthService);
-    const mailServiceInstance = (authService as any).mailService;
+    const mailServiceInstance = (
+      authService as unknown as { mailService: MailService }
+    ).mailService;
     jest
       .spyOn(mailServiceInstance, 'sendConfirmationEmail')
-      .mockImplementationOnce(async (_e: string, _n: string, t: string) => {
+      .mockImplementationOnce((_e: string, _n: string, t: string) => {
         capturedToken = t;
+        return Promise.resolve();
       });
 
     await request(app.getHttpServer())
@@ -84,7 +88,7 @@ describe('Uploads tus (e2e)', () => {
       .post('/auth/login')
       .send({ email, password });
 
-    return res.body.access_token;
+    return (res.body as { access_token: string }).access_token;
   }
 
   function uploadMetadata(pairs: Record<string, string>): string {
@@ -181,7 +185,7 @@ describe('Uploads tus (e2e)', () => {
       expect(videos[0].processing_status).toBe('processing');
       expect(videos[0].size_bytes).toBe(String(fixture.length));
 
-      const jobs = await dataSource.query(
+      const jobs = await dataSource.query<unknown[]>(
         `SELECT * FROM pgboss.job WHERE name = 'video-processing' AND data->>'videoId' = $1`,
         [videos[0].id],
       );

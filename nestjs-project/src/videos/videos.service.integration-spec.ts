@@ -5,7 +5,11 @@ import {
   cleanAllTables,
   createTestDataSource,
 } from '../test/create-test-data-source';
-import { Video, VideoProcessingStatus, VideoStatus } from './entities/video.entity';
+import {
+  Video,
+  VideoProcessingStatus,
+  VideoStatus,
+} from './entities/video.entity';
 import { VideosService } from './videos.service';
 
 const ALL_ENTITIES = [User, Channel, Video];

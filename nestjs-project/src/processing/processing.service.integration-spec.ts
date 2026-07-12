@@ -101,90 +101,78 @@ describe('ProcessingService (integration)', () => {
     });
   }
 
-  it(
-    'processes a valid fixture: video becomes ready with metadata and a thumbnail in the bucket',
-    async () => {
-      const workDir = await fs.mkdtemp(join(tmpdir(), 'fixture-'));
-      const fixturePath = join(workDir, 'fixture.mp4');
-      await generateFixtureVideo(fixturePath);
-      const fixtureBytes = await fs.readFile(fixturePath);
+  it('processes a valid fixture: video becomes ready with metadata and a thumbnail in the bucket', async () => {
+    const workDir = await fs.mkdtemp(join(tmpdir(), 'fixture-'));
+    const fixturePath = join(workDir, 'fixture.mp4');
+    await generateFixtureVideo(fixturePath);
+    const fixtureBytes = await fs.readFile(fixturePath);
 
-      const video = await createVideoWithObject(fixtureBytes);
+    const video = await createVideoWithObject(fixtureBytes);
+    await processingService.processVideo(video.id);
+
+    const updated = await videoRepository.findOneByOrFail({ id: video.id });
+    expect(updated.processing_status).toBe('ready');
+    expect(Number(updated.duration_seconds)).toBeGreaterThan(0);
+    expect(updated.width).toBe(64);
+    expect(updated.height).toBe(64);
+    expect(updated.thumbnail_key).toBe(`thumbnails/${video.public_id}.jpg`);
+
+    const thumbnail = await storageService.headObject(
+      thumbnailsBucket,
+      updated.thumbnail_key!,
+    );
+    expect(thumbnail).toBeDefined();
+
+    await fs.rm(workDir, { recursive: true, force: true });
+  }, 30000);
+
+  it('reprocessing an already-ready video keeps data consistent (no orphaned duplicate thumbnail)', async () => {
+    const workDir = await fs.mkdtemp(join(tmpdir(), 'fixture-'));
+    const fixturePath = join(workDir, 'fixture.mp4');
+    await generateFixtureVideo(fixturePath);
+    const fixtureBytes = await fs.readFile(fixturePath);
+
+    const video = await createVideoWithObject(fixtureBytes);
+    await processingService.processVideo(video.id);
+    const firstPass = await videoRepository.findOneByOrFail({
+      id: video.id,
+    });
+
+    await processingService.processVideo(video.id);
+    const secondPass = await videoRepository.findOneByOrFail({
+      id: video.id,
+    });
+
+    expect(secondPass.thumbnail_key).toBe(firstPass.thumbnail_key);
+    expect(secondPass.processing_status).toBe('ready');
+
+    const thumbnail = await storageService.headObject(
+      thumbnailsBucket,
+      secondPass.thumbnail_key!,
+    );
+    expect(thumbnail).toBeDefined();
+
+    await fs.rm(workDir, { recursive: true, force: true });
+  }, 30000);
+
+  it('a corrupted object fails processing, and the worker failure path marks the video failed', async () => {
+    const video = await createVideoWithObject(
+      Buffer.from('this is not a video file'),
+    );
+
+    let caught: unknown;
+    try {
       await processingService.processVideo(video.id);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeDefined();
 
-      const updated = await videoRepository.findOneByOrFail({ id: video.id });
-      expect(updated.processing_status).toBe('ready');
-      expect(Number(updated.duration_seconds)).toBeGreaterThan(0);
-      expect(updated.width).toBe(64);
-      expect(updated.height).toBe(64);
-      expect(updated.thumbnail_key).toBe(`thumbnails/${video.public_id}.jpg`);
+    const message = caught instanceof Error ? caught.message : String(caught);
+    await videosService.markFailed(video.id, message);
 
-      const thumbnail = await storageService.headObject(
-        thumbnailsBucket,
-        updated.thumbnail_key!,
-      );
-      expect(thumbnail).toBeDefined();
-
-      await fs.rm(workDir, { recursive: true, force: true });
-    },
-    30000,
-  );
-
-  it(
-    'reprocessing an already-ready video keeps data consistent (no orphaned duplicate thumbnail)',
-    async () => {
-      const workDir = await fs.mkdtemp(join(tmpdir(), 'fixture-'));
-      const fixturePath = join(workDir, 'fixture.mp4');
-      await generateFixtureVideo(fixturePath);
-      const fixtureBytes = await fs.readFile(fixturePath);
-
-      const video = await createVideoWithObject(fixtureBytes);
-      await processingService.processVideo(video.id);
-      const firstPass = await videoRepository.findOneByOrFail({
-        id: video.id,
-      });
-
-      await processingService.processVideo(video.id);
-      const secondPass = await videoRepository.findOneByOrFail({
-        id: video.id,
-      });
-
-      expect(secondPass.thumbnail_key).toBe(firstPass.thumbnail_key);
-      expect(secondPass.processing_status).toBe('ready');
-
-      const thumbnail = await storageService.headObject(
-        thumbnailsBucket,
-        secondPass.thumbnail_key!,
-      );
-      expect(thumbnail).toBeDefined();
-
-      await fs.rm(workDir, { recursive: true, force: true });
-    },
-    30000,
-  );
-
-  it(
-    'a corrupted object fails processing, and the worker failure path marks the video failed',
-    async () => {
-      const video = await createVideoWithObject(
-        Buffer.from('this is not a video file'),
-      );
-
-      let caught: unknown;
-      try {
-        await processingService.processVideo(video.id);
-      } catch (error) {
-        caught = error;
-      }
-      expect(caught).toBeDefined();
-
-      const message = caught instanceof Error ? caught.message : String(caught);
-      await videosService.markFailed(video.id, message);
-
-      const updated = await videoRepository.findOneByOrFail({ id: video.id });
-      expect(updated.processing_status).toBe('failed');
-      expect(updated.processing_error).toBeTruthy();
-    },
-    30000,
-  );
+    const updated = await videoRepository.findOneByOrFail({ id: video.id });
+    expect(updated.processing_status).toBe('failed');
+    expect(updated.processing_error).toBeTruthy();
+  }, 30000);
 });

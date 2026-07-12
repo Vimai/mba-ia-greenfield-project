@@ -8,7 +8,10 @@ export class VideoStatusResponseDto {
   @ApiProperty({ example: 'my-video.mp4' })
   title: string;
 
-  @ApiProperty({ enum: VideoProcessingStatus, example: VideoProcessingStatus.READY })
+  @ApiProperty({
+    enum: VideoProcessingStatus,
+    example: VideoProcessingStatus.READY,
+  })
   processingStatus: VideoProcessingStatus;
 
   @ApiProperty({ nullable: true, example: 12.5 })
@@ -20,6 +23,9 @@ export class VideoStatusResponseDto {
   @ApiProperty({ nullable: true, example: 1080 })
   height: number | null;
 
-  @ApiProperty({ nullable: true, example: 'https://minio.example/thumbnails/...' })
+  @ApiProperty({
+    nullable: true,
+    example: 'https://minio.example/thumbnails/...',
+  })
   thumbnailUrl: string | null;
 }

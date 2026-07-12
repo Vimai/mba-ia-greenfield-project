@@ -1,6 +1,10 @@
 import { QueryFailedError } from 'typeorm';
 import { VideosService } from './videos.service';
-import { Video, VideoProcessingStatus, VideoStatus } from './entities/video.entity';
+import {
+  Video,
+  VideoProcessingStatus,
+  VideoStatus,
+} from './entities/video.entity';
 
 function makeRepository(overrides: Record<string, jest.Mock> = {}): any {
   return {

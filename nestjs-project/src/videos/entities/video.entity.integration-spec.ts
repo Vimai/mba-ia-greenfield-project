@@ -5,11 +5,7 @@ import {
   cleanAllTables,
   createTestDataSource,
 } from '../../test/create-test-data-source';
-import {
-  Video,
-  VideoProcessingStatus,
-  VideoStatus,
-} from './video.entity';
+import { Video, VideoProcessingStatus, VideoStatus } from './video.entity';
 
 const ALL_ENTITIES = [User, Channel, Video];
 
@@ -107,9 +103,7 @@ describe('Video entity (integration)', () => {
 
   it('loads the related channel via ManyToOne relation', async () => {
     const channel = await createChannel();
-    await videoRepository.save(
-      videoRepository.create(buildVideo(channel.id)),
-    );
+    await videoRepository.save(videoRepository.create(buildVideo(channel.id)));
 
     const found = await videoRepository.findOne({
       where: { channel_id: channel.id },

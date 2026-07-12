@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { EntityManager } from 'typeorm';
 import PgBoss from 'pg-boss';
-import { PG_BOSS, QUEUE_NAMES, VIDEO_PROCESSING_RETRY_LIMIT } from './queue.constants';
+import {
+  PG_BOSS,
+  QUEUE_NAMES,
+  VIDEO_PROCESSING_RETRY_LIMIT,
+} from './queue.constants';
 
 export interface EnqueueVideoProcessingOptions {
   manager?: EntityManager;

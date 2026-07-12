@@ -8,6 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/auth/auth.service';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
+import { MailService } from '../src/mail/mail.service';
 import { ValidationExceptionFilter } from '../src/common/filters/validation-exception.filter';
 import { cleanAllTables } from '../src/test/create-test-data-source';
 import { Channel } from '../src/channels/entities/channel.entity';
@@ -18,6 +19,33 @@ import {
 } from '../src/videos/entities/video.entity';
 import { StorageService } from '../src/storage/storage.service';
 import storageConfig from '../src/config/storage.config';
+
+interface LoginResponseBody {
+  access_token: string;
+}
+
+interface MeResponseBody {
+  sub: string;
+}
+
+interface StatusResponseBody {
+  publicId: string;
+  title: string;
+  processingStatus: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  thumbnailUrl: string;
+}
+
+interface PresignedUrlResponseBody {
+  url: string;
+  expiresInSeconds: number;
+}
+
+interface ErrorResponseBody {
+  error: string;
+}
 
 describe('Videos delivery (e2e)', () => {
   let app: INestApplication<App>;
@@ -83,11 +111,14 @@ describe('Videos delivery (e2e)', () => {
 
     let capturedToken = '';
     const authService = app.get(AuthService);
-    const mailServiceInstance = (authService as any).mailService;
+    const mailServiceInstance = (
+      authService as unknown as { mailService: MailService }
+    ).mailService;
     jest
       .spyOn(mailServiceInstance, 'sendConfirmationEmail')
-      .mockImplementationOnce(async (_e: string, _n: string, t: string) => {
+      .mockImplementationOnce((_e: string, _n: string, t: string) => {
         capturedToken = t;
+        return Promise.resolve();
       });
 
     await request(app.getHttpServer())
@@ -99,16 +130,18 @@ describe('Videos delivery (e2e)', () => {
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email, password });
+    const loginBody = loginRes.body as LoginResponseBody;
 
     const meRes = await request(app.getHttpServer())
       .get('/auth/me')
-      .set('Authorization', `Bearer ${loginRes.body.access_token}`);
+      .set('Authorization', `Bearer ${loginBody.access_token}`);
+    const meBody = meRes.body as MeResponseBody;
 
     const channel = await channelRepository.findOneByOrFail({
-      user_id: meRes.body.sub,
+      user_id: meBody.sub,
     });
 
-    return { token: loginRes.body.access_token, channel };
+    return { token: loginBody.access_token, channel };
   }
 
   let videoCounter = 0;
@@ -149,15 +182,16 @@ describe('Videos delivery (e2e)', () => {
         .get(`/videos/${video.public_id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
+      const body = res.body as StatusResponseBody;
 
-      expect(res.body.publicId).toBe(video.public_id);
-      expect(res.body.title).toBe(video.title);
-      expect(res.body.processingStatus).toBe('ready');
-      expect(typeof res.body.durationSeconds).toBe('number');
-      expect(typeof res.body.width).toBe('number');
-      expect(typeof res.body.height).toBe('number');
-      expect(typeof res.body.thumbnailUrl).toBe('string');
-      expect(res.body.thumbnailUrl.length).toBeGreaterThan(0);
+      expect(body.publicId).toBe(video.public_id);
+      expect(body.title).toBe(video.title);
+      expect(body.processingStatus).toBe('ready');
+      expect(typeof body.durationSeconds).toBe('number');
+      expect(typeof body.width).toBe('number');
+      expect(typeof body.height).toBe('number');
+      expect(typeof body.thumbnailUrl).toBe('string');
+      expect(body.thumbnailUrl.length).toBeGreaterThan(0);
     });
 
     it('1.2 status-not-owner-forbidden: a different authenticated user gets 403 VIDEO_NOT_OWNED', async () => {
@@ -170,7 +204,7 @@ describe('Videos delivery (e2e)', () => {
         .set('Authorization', `Bearer ${otherToken}`)
         .expect(403);
 
-      expect(res.body.error).toBe('VIDEO_NOT_OWNED');
+      expect((res.body as ErrorResponseBody).error).toBe('VIDEO_NOT_OWNED');
     });
 
     it('1.3 status-unauthenticated: no Authorization header returns 401', async () => {
@@ -208,11 +242,12 @@ describe('Videos delivery (e2e)', () => {
       const res = await request(app.getHttpServer())
         .get(`/videos/${video.public_id}/stream-url`)
         .expect(200);
+      const body = res.body as PresignedUrlResponseBody;
 
-      expect(typeof res.body.url).toBe('string');
-      expect(typeof res.body.expiresInSeconds).toBe('number');
+      expect(typeof body.url).toBe('string');
+      expect(typeof body.expiresInSeconds).toBe('number');
 
-      const fetched = await fetch(res.body.url);
+      const fetched = await fetch(body.url);
       expect([200, 206]).toContain(fetched.status);
       expect(Buffer.from(await fetched.arrayBuffer())).toEqual(fixtureBytes);
     });
@@ -227,7 +262,7 @@ describe('Videos delivery (e2e)', () => {
         .get(`/videos/${video.public_id}/stream-url`)
         .expect(409);
 
-      expect(res.body.error).toBe('VIDEO_NOT_READY');
+      expect((res.body as ErrorResponseBody).error).toBe('VIDEO_NOT_READY');
     });
 
     it('2.3 download-url-attachment-disposition: the presigned URL carries an attachment disposition', async () => {
@@ -237,16 +272,15 @@ describe('Videos delivery (e2e)', () => {
       const res = await request(app.getHttpServer())
         .get(`/videos/${video.public_id}/download-url`)
         .expect(200);
+      const body = res.body as PresignedUrlResponseBody;
 
-      expect(decodeURIComponent(res.body.url)).toContain(
+      expect(decodeURIComponent(body.url)).toContain(
         'response-content-disposition=attachment',
       );
 
-      const fetched = await fetch(res.body.url);
+      const fetched = await fetch(body.url);
       expect(fetched.status).toBe(200);
-      expect(fetched.headers.get('content-disposition')).toMatch(
-        /^attachment/,
-      );
+      expect(fetched.headers.get('content-disposition')).toMatch(/^attachment/);
     });
   });
 
@@ -259,17 +293,23 @@ describe('Videos delivery (e2e)', () => {
         .get(`/videos/${unknownId}/status`)
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
-      expect(statusRes.body.error).toBe('VIDEO_NOT_FOUND');
+      expect((statusRes.body as ErrorResponseBody).error).toBe(
+        'VIDEO_NOT_FOUND',
+      );
 
       const streamRes = await request(app.getHttpServer())
         .get(`/videos/${unknownId}/stream-url`)
         .expect(404);
-      expect(streamRes.body.error).toBe('VIDEO_NOT_FOUND');
+      expect((streamRes.body as ErrorResponseBody).error).toBe(
+        'VIDEO_NOT_FOUND',
+      );
 
       const downloadRes = await request(app.getHttpServer())
         .get(`/videos/${unknownId}/download-url`)
         .expect(404);
-      expect(downloadRes.body.error).toBe('VIDEO_NOT_FOUND');
+      expect((downloadRes.body as ErrorResponseBody).error).toBe(
+        'VIDEO_NOT_FOUND',
+      );
     });
   });
 });

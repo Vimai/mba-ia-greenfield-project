@@ -19,9 +19,7 @@ import { QueueService } from './queue.service';
           password: config.password,
           database: config.name,
         });
-        boss.on('error', (error) =>
-          Logger.error(error, undefined, 'PgBoss'),
-        );
+        boss.on('error', (error) => Logger.error(error, undefined, 'PgBoss'));
         return boss;
       },
     },
