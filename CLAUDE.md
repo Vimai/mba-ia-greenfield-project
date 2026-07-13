@@ -23,7 +23,8 @@ See `docs/diagrams/software-arch.mermaid` for the full diagram. Key containers:
 - **Video Worker** (FFmpeg) → consumes jobs from queue, processes videos, updates DB and storage
 - **Database** (PostgreSQL) → users, channels, videos, comments, likes
 - **Object Storage** (S3/MinIO) → video files and thumbnails
-- **Message Queue** (TBD) → video processing job queue
+- **Message Queue** (pg-boss on PostgreSQL) → video processing job queue
+- **Video Worker** (FFmpeg) → separate container, consumes jobs from queue, extracts metadata and generates thumbnails
 - **Email Service** (SMTP) → account confirmation and password recovery
 
 ## Docker Networking
@@ -105,3 +106,50 @@ Skip documentation lookup only for trivial operations such as:
 
 If a library is involved and there is uncertainty, documentation lookup is mandatory.
 If the documentation returned does not match the installed version, flag the discrepancy before proceeding.
+
+## Phase 03: Video Upload & Processing
+
+### Architecture Components
+
+**Object Storage:** MinIO container with S3-compatible API (`@aws-sdk/client-s3`), dual-endpoint config (internal ops + public presigned URL signing).
+
+**Message Queue:** pg-boss on existing PostgreSQL — transactional job enqueue, retry with backoff, no new broker.
+
+**Video Worker:** Separate Compose service (`video-worker`) running FFmpeg in isolated container, consuming jobs from queue.
+
+**Upload Protocol:** tus 1.x resumable uploads (with `@tus/server` + `@tus/s3-store`) mounted behind BFF streaming proxy.
+
+**Streaming & Download:** Presigned GET URLs direct from MinIO (Range-aware for seek), `Content-Disposition: attachment` for downloads.
+
+### New Modules & Services
+
+| Module | Purpose | Key Files |
+|--------|---------|-----------|
+| **StorageModule** | S3 operations and presigned URL generation | `src/storage/storage.service.ts`, `src/storage/storage.module.ts`, `src/config/storage.config.ts` |
+| **VideosModule** | Video entity, public_id generation (nanoid), status lifecycle | `src/videos/videos.service.ts`, `src/videos/entities/video.entity.ts` |
+| **QueueModule** | pg-boss queue initialization and status | `src/queue/queue.module.ts` |
+| **ProcessingService** | FFmpeg job handler, metadata extraction, thumbnail generation | `src/processing/processing.service.ts` |
+| **FfmpegService** | System ffmpeg/ffprobe wrapper (direct spawn, no deprecated fluent-ffmpeg) | `src/ffmpeg/ffmpeg.service.ts` |
+| **UploadsModule** | tus server endpoint mounted on `/uploads/tus` | `src/uploads/uploads.service.ts`, `src/uploads/uploads.module.ts` |
+| **WorkerModule** | Entry point for separate worker container | `src/worker.module.ts`, `src/worker.ts` |
+| **BFF Proxy** (Next.js) | Streaming proxy route for tus, attaching session auth | `next-frontend/app/api/uploads/tus/route.ts` |
+
+### Database Migrations
+
+Run `npm run migration:run` to apply the `videos` table migration created during Phase 03.
+
+### Environment Configuration
+
+New keys in `.env` / `.env.example`:
+
+```dotenv
+STORAGE_ENDPOINT_INTERNAL=http://minio:9000
+STORAGE_ENDPOINT_PUBLIC=http://localhost:9000
+STORAGE_ACCESS_KEY=streamtube
+STORAGE_SECRET_KEY=streamtube
+STORAGE_VIDEOS_BUCKET=videos
+STORAGE_THUMBNAILS_BUCKET=thumbnails
+STORAGE_PRESIGN_EXPIRES_SECONDS=3600
+```
+
+Validated via Joi in `src/config/env.validation.ts`.

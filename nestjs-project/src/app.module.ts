@@ -9,13 +9,25 @@ import authConfig from './config/auth.config';
 import databaseConfig from './config/database.config';
 import mailConfig from './config/mail.config';
 import swaggerConfig from './config/swagger.config';
+import storageConfig from './config/storage.config';
 import { envValidationSchema } from './config/env.validation';
+import { StorageModule } from './storage/storage.module';
+import { VideosModule } from './videos/videos.module';
+import { QueueModule } from './queue/queue.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, authConfig, databaseConfig, mailConfig, swaggerConfig],
+      load: [
+        appConfig,
+        authConfig,
+        databaseConfig,
+        mailConfig,
+        swaggerConfig,
+        storageConfig,
+      ],
       validationSchema: envValidationSchema,
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),
@@ -34,6 +46,10 @@ import { envValidationSchema } from './config/env.validation';
       }),
     }),
     AuthModule,
+    StorageModule,
+    VideosModule,
+    QueueModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
