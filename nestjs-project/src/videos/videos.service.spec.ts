@@ -1,3 +1,4 @@
+import type { Repository } from 'typeorm';
 import { QueryFailedError } from 'typeorm';
 import { VideosService } from './videos.service';
 import {
@@ -6,7 +7,9 @@ import {
   VideoStatus,
 } from './entities/video.entity';
 
-function makeRepository(overrides: Record<string, jest.Mock> = {}): any {
+function makeRepository(
+  overrides: Partial<Repository<Video>> = {},
+): Partial<Repository<Video>> {
   return {
     create: jest.fn(),
     save: jest.fn(),
@@ -29,7 +32,14 @@ function makeVideo(overrides: Partial<Video> = {}): Video {
 }
 
 function makeUniqueError(): QueryFailedError {
-  const err = new QueryFailedError('INSERT', [], new Error()) as any;
+  const err = new QueryFailedError(
+    'INSERT',
+    [],
+    new Error(),
+  ) as unknown as QueryFailedError & {
+    code: string;
+    detail: string;
+  };
   err.code = '23505';
   err.detail = 'Key (public_id)=(abc) already exists.';
   return err;
@@ -43,7 +53,7 @@ describe('VideosService', () => {
         create: jest.fn().mockReturnValue(video),
         save: jest.fn().mockResolvedValue(video),
       });
-      const service = new VideosService(repository);
+      const service = new VideosService(repository as Repository<Video>);
 
       const result = await service.createDraft({
         channelId: 'channel-id',
@@ -65,7 +75,7 @@ describe('VideosService', () => {
           .mockRejectedValueOnce(makeUniqueError())
           .mockResolvedValueOnce(video),
       });
-      const service = new VideosService(repository);
+      const service = new VideosService(repository as Repository<Video>);
 
       const result = await service.createDraft({
         channelId: 'channel-id',
@@ -83,7 +93,7 @@ describe('VideosService', () => {
         create: jest.fn().mockReturnValue(video),
         save: jest.fn().mockRejectedValue(makeUniqueError()),
       });
-      const service = new VideosService(repository);
+      const service = new VideosService(repository as Repository<Video>);
 
       await expect(
         service.createDraft({
@@ -100,7 +110,7 @@ describe('VideosService', () => {
         create: jest.fn().mockReturnValue(makeVideo()),
         save: jest.fn().mockRejectedValue(unexpectedError),
       });
-      const service = new VideosService(repository);
+      const service = new VideosService(repository as Repository<Video>);
 
       await expect(
         service.createDraft({

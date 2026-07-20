@@ -60,11 +60,12 @@ describe('Auth (e2e)', () => {
     password = 'password123',
   ): Promise<string> {
     const authService = app.get(AuthService);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const mailServiceInstance = (authService as any).mailService;
     let capturedToken = '';
     jest
       .spyOn(mailServiceInstance, 'sendConfirmationEmail')
-      .mockImplementationOnce(async (_e: string, _n: string, t: string) => {
+      .mockImplementationOnce((_e: string, _n: string, t: string) => {
         capturedToken = t;
       });
     await request(app.getHttpServer())
@@ -85,7 +86,9 @@ describe('Auth (e2e)', () => {
       .post('/auth/login')
       .send({ email, password });
     return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       access_token: res.body.access_token,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       refresh_token: res.body.refresh_token,
     };
   }
@@ -97,7 +100,9 @@ describe('Auth (e2e)', () => {
         .send({ email: 'user@example.com', password: 'password123' })
         .expect(201);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.id).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.email).toBe('user@example.com');
     });
 
@@ -111,6 +116,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'dup@example.com', password: 'password456' })
         .expect(409);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('EMAIL_ALREADY_EXISTS');
     });
 
@@ -120,6 +126,7 @@ describe('Auth (e2e)', () => {
         .send({ password: 'password123' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
 
@@ -129,6 +136,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'not-an-email', password: 'password123' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
 
@@ -138,6 +146,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'user@example.com', password: 'short' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
 
@@ -151,6 +160,7 @@ describe('Auth (e2e)', () => {
         })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });
@@ -178,6 +188,7 @@ describe('Auth (e2e)', () => {
         .query({ token })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('INVALID_TOKEN');
     });
 
@@ -194,6 +205,7 @@ describe('Auth (e2e)', () => {
         .query({ token })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('TOKEN_EXPIRED');
     });
 
@@ -202,6 +214,7 @@ describe('Auth (e2e)', () => {
         .get('/auth/confirm-email')
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });
@@ -246,6 +259,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'not-an-email' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });
@@ -270,7 +284,9 @@ describe('Auth (e2e)', () => {
         .set('Authorization', `Bearer ${access_token}`)
         .expect(200);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.sub).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.email).toBe('me@example.com');
     });
 
@@ -305,9 +321,13 @@ describe('Auth (e2e)', () => {
         .send({ email: 'login@example.com', password: 'password123' })
         .expect(200);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.access_token).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.refresh_token).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(typeof res.body.access_token).toBe('string');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(typeof res.body.refresh_token).toBe('string');
     });
 
@@ -319,6 +339,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'wrongpass@example.com', password: 'incorrect' })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('INVALID_CREDENTIALS');
     });
 
@@ -328,6 +349,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'nobody@example.com', password: 'password123' })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('INVALID_CREDENTIALS');
     });
 
@@ -341,6 +363,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'unconfirmed@example.com', password: 'password123' })
         .expect(403);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('EMAIL_NOT_CONFIRMED');
     });
 
@@ -350,6 +373,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'user@example.com' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });
@@ -365,8 +389,11 @@ describe('Auth (e2e)', () => {
         .send({ refresh_token })
         .expect(200);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.access_token).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.refresh_token).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.refresh_token).not.toBe(refresh_token);
     });
 
@@ -376,6 +403,7 @@ describe('Auth (e2e)', () => {
         .send({ refresh_token: 'not-a-real-token' })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('INVALID_TOKEN');
     });
 
@@ -397,6 +425,7 @@ describe('Auth (e2e)', () => {
         .send({ refresh_token })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('TOKEN_EXPIRED');
     });
 
@@ -413,6 +442,7 @@ describe('Auth (e2e)', () => {
         .send({ refresh_token: token1 })
         .expect(200);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.access_token).toBeDefined();
 
       const tokenHash = crypto
@@ -452,6 +482,7 @@ describe('Auth (e2e)', () => {
         .send({ refresh_token: token1 })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('TOKEN_REUSE_DETECTED');
 
       const revokedRecord = await refreshTokenRepository.findOneBy({
@@ -470,6 +501,7 @@ describe('Auth (e2e)', () => {
         .send({})
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });
@@ -505,6 +537,7 @@ describe('Auth (e2e)', () => {
         .expect(401);
 
       expect(['INVALID_TOKEN', 'TOKEN_REUSE_DETECTED']).toContain(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         res.body.error,
       );
     });
@@ -512,11 +545,12 @@ describe('Auth (e2e)', () => {
 
   async function capturePasswordResetToken(email: string): Promise<string> {
     const authService = app.get(AuthService);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const mailServiceInstance = (authService as any).mailService;
     let captured = '';
     jest
       .spyOn(mailServiceInstance, 'sendPasswordResetEmail')
-      .mockImplementationOnce(async (_e: string, _n: string, t: string) => {
+      .mockImplementationOnce((_e: string, _n: string, t: string) => {
         captured = t;
       });
     await request(app.getHttpServer())
@@ -548,6 +582,7 @@ describe('Auth (e2e)', () => {
         .send({ email: 'not-an-email' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });
@@ -571,6 +606,7 @@ describe('Auth (e2e)', () => {
         .post('/auth/login')
         .send({ email: 'resetok@example.com', password: 'newpassword' })
         .expect(200);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(loginRes.body.access_token).toBeDefined();
     });
 
@@ -590,7 +626,9 @@ describe('Auth (e2e)', () => {
         .post('/auth/refresh')
         .send({ refresh_token })
         .expect(401);
+
       expect(['INVALID_TOKEN', 'TOKEN_REUSE_DETECTED']).toContain(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         res.body.error,
       );
     });
@@ -601,6 +639,7 @@ describe('Auth (e2e)', () => {
         .send({ token: 'unknown', new_password: 'newpassword' })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('INVALID_TOKEN');
     });
 
@@ -618,6 +657,7 @@ describe('Auth (e2e)', () => {
         .send({ token, new_password: 'anotherpass' })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('INVALID_TOKEN');
     });
 
@@ -635,6 +675,7 @@ describe('Auth (e2e)', () => {
         .send({ token, new_password: 'newpassword' })
         .expect(401);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('TOKEN_EXPIRED');
     });
 
@@ -644,6 +685,7 @@ describe('Auth (e2e)', () => {
         .send({ new_password: 'newpassword' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
 
@@ -653,6 +695,7 @@ describe('Auth (e2e)', () => {
         .send({ token: 'abc', new_password: 'short' })
         .expect(400);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(res.body.error).toBe('VALIDATION_ERROR');
     });
   });

@@ -8,7 +8,9 @@ function execFileAsync(
   return new Promise((resolve, reject) => {
     execFile(file, args, (error, stdout, stderr) => {
       if (error) {
-        reject(error);
+        reject(
+          error instanceof Error ? error : new Error('Unknown execFile error'),
+        );
         return;
       }
       resolve({ stdout, stderr });
