@@ -12,6 +12,18 @@ import { VideosService } from '../videos/videos.service';
 import { QueueService } from '../queue/queue.service';
 import type { TusRequest } from './uploads.types';
 
+class TusError extends Error {
+  readonly status_code: number;
+  readonly body: string;
+
+  constructor(statusCode: number, body: string) {
+    super(body);
+    this.status_code = statusCode;
+    this.body = body;
+    Object.setPrototypeOf(this, TusError.prototype);
+  }
+}
+
 @Injectable()
 export class UploadsService {
   constructor(
@@ -29,7 +41,7 @@ export class UploadsService {
   private async authenticate(req: TusRequest): Promise<string> {
     const authHeader = req.headers.authorization ?? '';
     if (!authHeader.startsWith(BEARER_PREFIX)) {
-      throw { status_code: 401, body: 'Unauthorized' };
+      throw new TusError(401, 'Unauthorized');
     }
     const token = authHeader.slice(BEARER_PREFIX.length);
 
@@ -37,12 +49,12 @@ export class UploadsService {
     try {
       payload = await this.jwtService.verifyAsync<JwtPayload>(token);
     } catch {
-      throw { status_code: 401, body: 'Unauthorized' };
+      throw new TusError(401, 'Unauthorized');
     }
 
     const channel = await this.channelsService.findByUserId(payload.sub);
     if (!channel) {
-      throw { status_code: 401, body: 'Unauthorized' };
+      throw new TusError(401, 'Unauthorized');
     }
 
     req.channelId = channel.id;
@@ -55,7 +67,7 @@ export class UploadsService {
   ): Promise<void> {
     const video = await this.videosService.findByStorageKey(storageKey);
     if (!video || video.channel_id !== channelId) {
-      throw { status_code: 403, body: 'Forbidden' };
+      throw new TusError(403, 'Forbidden');
     }
   }
 
@@ -77,10 +89,10 @@ export class UploadsService {
   ): Promise<{ res: ServerResponse }> {
     const filename = upload.metadata?.filename;
     if (!filename) {
-      throw { status_code: 400, body: 'filename metadata is required' };
+      throw new TusError(400, 'filename metadata is required');
     }
     if (!req.channelId) {
-      throw { status_code: 401, body: 'Unauthorized' };
+      throw new TusError(401, 'Unauthorized');
     }
 
     await this.videosService.createDraft({

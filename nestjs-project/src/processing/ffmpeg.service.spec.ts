@@ -19,9 +19,15 @@ describe('FfmpegService', () => {
         format: { duration: '12.500000' },
         streams: [{ codec_type: 'video', width: 1920, height: 1080 }],
       });
-      mockExecFile.mockImplementation((_file, _args, callback) => {
-        callback(null, ffprobeOutput, '');
-      });
+      mockExecFile.mockImplementation(
+        (
+          _file,
+          _args,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callback(null, ffprobeOutput, '');
+        },
+      );
 
       const result = await service.probeMetadata('/tmp/input.mp4');
 
@@ -50,9 +56,15 @@ describe('FfmpegService', () => {
         format: { duration: '1' },
         streams: [{ codec_type: 'audio' }],
       });
-      mockExecFile.mockImplementation((_file, _args, callback) => {
-        callback(null, ffprobeOutput, '');
-      });
+      mockExecFile.mockImplementation(
+        (
+          _file,
+          _args,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callback(null, ffprobeOutput, '');
+        },
+      );
 
       await expect(service.probeMetadata('/tmp/input.mp4')).rejects.toThrow(
         'No video stream found',
@@ -60,9 +72,15 @@ describe('FfmpegService', () => {
     });
 
     it('rejects when ffprobe exits with an error', async () => {
-      mockExecFile.mockImplementation((_file, _args, callback) => {
-        callback(new Error('ffprobe: invalid data'), '', 'invalid data');
-      });
+      mockExecFile.mockImplementation(
+        (
+          _file,
+          _args,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callback(new Error('ffprobe: invalid data'), '', 'invalid data');
+        },
+      );
 
       await expect(service.probeMetadata('/tmp/input.mp4')).rejects.toThrow(
         'ffprobe: invalid data',
@@ -72,9 +90,15 @@ describe('FfmpegService', () => {
 
   describe('extractThumbnail', () => {
     it('invokes ffmpeg with the expected arguments', async () => {
-      mockExecFile.mockImplementation((_file, _args, callback) => {
-        callback(null, '', '');
-      });
+      mockExecFile.mockImplementation(
+        (
+          _file,
+          _args,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callback(null, '', '');
+        },
+      );
 
       await service.extractThumbnail('/tmp/input.mp4', '/tmp/thumb.jpg', 1.5);
 
@@ -95,9 +119,15 @@ describe('FfmpegService', () => {
     });
 
     it('rejects when ffmpeg exits with an error', async () => {
-      mockExecFile.mockImplementation((_file, _args, callback) => {
-        callback(new Error('ffmpeg: no such file'), '', 'no such file');
-      });
+      mockExecFile.mockImplementation(
+        (
+          _file,
+          _args,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callback(new Error('ffmpeg: no such file'), '', 'no such file');
+        },
+      );
 
       await expect(
         service.extractThumbnail('/tmp/missing.mp4', '/tmp/thumb.jpg', 1),

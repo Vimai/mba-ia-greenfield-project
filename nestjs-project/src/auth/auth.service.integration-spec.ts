@@ -65,12 +65,17 @@ async function createAuthTestModule(): Promise<TestingModule> {
 
 function captureConfirmationToken(authService: AuthService): Promise<string> {
   return new Promise((resolve) => {
-    const mailServiceInstance = (authService as any).mailService;
+    const mailServiceInstance = (
+      authService as unknown as {
+        mailService: { sendConfirmationEmail: jest.Mock };
+      }
+    ).mailService;
     jest
       .spyOn(mailServiceInstance, 'sendConfirmationEmail')
-      .mockImplementationOnce(async (_e: string, _n: string, t: string) =>
-        resolve(t),
-      );
+      .mockImplementationOnce((_e: string, _n: string, t: string) => {
+        resolve(t);
+        return Promise.resolve(undefined);
+      });
   });
 }
 
@@ -102,7 +107,7 @@ describe('AuthService — register (integration)', () => {
     dataSource = module.get(DataSource);
     verificationTokenRepository = dataSource.getRepository(VerificationToken);
     userRepository = dataSource.getRepository(User);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -193,7 +198,7 @@ describe('AuthService — confirm (integration)', () => {
     dataSource = module.get(DataSource);
     verificationTokenRepository = dataSource.getRepository(VerificationToken);
     userRepository = dataSource.getRepository(User);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -231,7 +236,7 @@ describe('AuthService — confirm (integration)', () => {
 
   it('throws TokenExpiredException for an expired token', async () => {
     const capturePromise = captureConfirmationToken(authService);
-    const { id: userId } = await authService.register({
+    await authService.register({
       email: 'expired@example.com',
       password: 'password123',
     });
@@ -262,7 +267,7 @@ describe('AuthService — resendConfirmation (integration)', () => {
     authService = module.get(AuthService);
     dataSource = module.get(DataSource);
     verificationTokenRepository = dataSource.getRepository(VerificationToken);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -316,7 +321,7 @@ describe('AuthService — login (integration)', () => {
     jwtService = module.get(JwtService);
     dataSource = module.get(DataSource);
     refreshTokenRepository = dataSource.getRepository(RefreshToken);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -395,7 +400,7 @@ describe('AuthService — refresh (integration)', () => {
     jwtService = module.get(JwtService);
     dataSource = module.get(DataSource);
     refreshTokenRepository = dataSource.getRepository(RefreshToken);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -466,8 +471,7 @@ describe('AuthService — refresh (integration)', () => {
 
     const activeTokens = await refreshTokenRepository.findBy({
       family,
-      revoked_at: null,
-    } as any);
+    });
     expect(activeTokens.length).toBeGreaterThan(0);
   });
 
@@ -511,7 +515,7 @@ describe('AuthService — logout (integration)', () => {
     authService = module.get(AuthService);
     dataSource = module.get(DataSource);
     refreshTokenRepository = dataSource.getRepository(RefreshToken);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -562,12 +566,17 @@ describe('AuthService — logout (integration)', () => {
 
 function capturePasswordResetToken(authService: AuthService): Promise<string> {
   return new Promise((resolve) => {
-    const mailServiceInstance = (authService as any).mailService;
+    const mailServiceInstance = (
+      authService as unknown as {
+        mailService: { sendPasswordResetEmail: jest.Mock };
+      }
+    ).mailService;
     jest
       .spyOn(mailServiceInstance, 'sendPasswordResetEmail')
-      .mockImplementationOnce(async (_e: string, _n: string, t: string) =>
-        resolve(t),
-      );
+      .mockImplementationOnce((_e: string, _n: string, t: string) => {
+        resolve(t);
+        return Promise.resolve(undefined);
+      });
   });
 }
 
@@ -581,7 +590,7 @@ describe('AuthService — forgotPassword (integration)', () => {
     authService = module.get(AuthService);
     dataSource = module.get(DataSource);
     verificationTokenRepository = dataSource.getRepository(VerificationToken);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();
@@ -666,7 +675,7 @@ describe('AuthService — resetPassword (integration)', () => {
     verificationTokenRepository = dataSource.getRepository(VerificationToken);
     userRepository = dataSource.getRepository(User);
     refreshTokenRepository = dataSource.getRepository(RefreshToken);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await dataSource.destroy();

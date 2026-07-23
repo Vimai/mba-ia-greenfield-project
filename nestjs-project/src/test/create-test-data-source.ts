@@ -6,7 +6,7 @@ interface TestDataSourceOptions {
 }
 
 export function createTestDataSource(
-  entities: (Function | string | EntitySchema<any>)[],
+  entities: (Function | string | EntitySchema<unknown>)[], // eslint-disable-line @typescript-eslint/no-unsafe-function-type
   options: TestDataSourceOptions = {},
 ): DataSource {
   const { synchronize = true, migrations } = options;
